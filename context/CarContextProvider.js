@@ -6,6 +6,7 @@ export const CarContextProvider = ({children}) => {
 
     const [ value, setValue ] = useState([])
     const [ count, setCount ] = useState(0)
+    const [ exists, setExists ] = useState(false)
 
     const emptyCart = () => {
         setValue([])
@@ -13,15 +14,27 @@ export const CarContextProvider = ({children}) => {
     }
 
     const buyOrder = ( val ) => {
+        value?.map((item) => {
+            if(val.name === item.name)
+            {
+                setExists(true)
+            }
+           
+        })
+
         setValue( value => [...value, val])
         setCount((count) => count + 1)
+        
+        
     }
     const rentOrder = ( val ) => {
+        console.log('entered')
         setValue(val)
+        console.log(value)
     }
 
     return(
-        <CarContext.Provider value={{emptyCart, buyOrder, rentOrder, value, count}}>
+        <CarContext.Provider value={{exists, emptyCart, buyOrder, rentOrder, value, count}}>
             {children}
         </CarContext.Provider>
     )

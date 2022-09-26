@@ -13,13 +13,13 @@ import FooterBanner from "../components/FooterBanner";
 import { useEffect } from "react";
 import { useCarContextProvider } from "../context/CarContextProvider";
 
-export default function Home({banner, saleCars, rentCars}) {
+export default function Home({banner, saleCars, rentCars, footerBanner}) {
 
 const { value, buyOrder } = useCarContextProvider()
 
-useEffect(() => {
-  console.log(value)
-},[])
+// useEffect(() => {
+//   console.log(footerBanner)
+// },[])
 
 return (
   <>
@@ -73,7 +73,7 @@ return (
       {rentCars.map((car) => <Featured key={car._id} car={car}/>)} 
       </div>
     </Grid> 
-    <FooterBanner />
+    <FooterBanner footer={footerBanner}/>
   </>
   
   
@@ -85,6 +85,9 @@ export const getServerSideProps = async () => {
 
   const query = '*[_type == "banner"]'
   const banner = await client.fetch(query)
+
+  const footerQuery = '*[_type == "footerBanner"]'
+  const footerBanner = await client.fetch(footerQuery)
 
   const saleQuery = '*[_type == "carsforsale"]'
   const saleCars = await client.fetch(saleQuery)
@@ -98,7 +101,8 @@ export const getServerSideProps = async () => {
     props: {
       banner,
       saleCars,
-      rentCars
+      rentCars,
+      footerBanner
 
     }
   }

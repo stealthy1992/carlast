@@ -2,16 +2,22 @@ import React, { useEffect, useState } from 'react'
 import { urlFor, client } from '../../lib/client'
 import { Grid, Box, ImageList, ImageListItem } from '@mui/material'
 import { useCarContextProvider } from '../../context/CarContextProvider'
+import Alert from '@mui/material/Alert';
+import Stack from '@mui/material/Stack';
+import CloseIcon from '@mui/icons-material/Close';
+import IconButton from '@mui/material/IconButton';
 
 
 const CarDetails = ({car}) => {
 
-const { buyOrder, rentOrder, value } = useCarContextProvider()
+const { exists, buyOrder, rentOrder, value } = useCarContextProvider()
 const { name, images, price, description, transmission, modelyear, manufacturer, registrationyear, mileage, sittingcapacity, color  } = car
 const [index, setIndex] = useState(0);
+const [toggle, setToggle ] = useState(false)
 
 const placeOrder = () => {
     buyOrder(car)
+    setToggle(true)
 }
 
 useEffect(() => {
@@ -27,7 +33,31 @@ useEffect(() => {
     justifyContent="center"
     style={{ minHeight: '100vh' }}
     >
-        {console.log('value is: ',value)}
+    <Grid item lg={12} md={12} sm={12} xs={12} >
+        { toggle && <Stack sx={{ width: '100%' }} spacing={2}>
+            <Alert sx={{ mb: 2 }} action={
+            <IconButton
+              aria-label="close"
+              color="inherit"
+              size="small"
+              onClick={() => setToggle(false)}
+            >
+              <CloseIcon fontSize="inherit" />
+            </IconButton>
+          } severity="success">Your request for car rent has been submitted.</Alert>
+        </Stack>}
+        { exists === true && <Alert action={
+            <IconButton
+              aria-label="close"
+              color="inherit"
+              size="small"
+              onClick={() => setToggle(false)}
+            >
+              <CloseIcon fontSize="inherit" />
+            </IconButton>
+          } severity="error">This vehicle already exists in the cart.</Alert>}
+    </Grid>
+        
     <Grid item lg={6} md={6} sm={12} xs={12} >
         <div className="product-detail-container">
             <div>

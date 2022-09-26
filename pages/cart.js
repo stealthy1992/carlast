@@ -13,6 +13,8 @@ import { Typography } from '@mui/material'
 import { useUser } from '@auth0/nextjs-auth0';
 import { useRouter } from 'next/router'
 import { useEffect } from 'react';
+import Link from 'next/link';
+import { Stripe, loadStripe } from '@stripe/stripe-js'
 
 const TAX_RATE = 0.07;
 
@@ -53,14 +55,6 @@ export default function SpanningTable() {
     if(!user)
     router.push('/api/auth/login')
   })
-
-  const checkout = (e) => {
-    e.preventDefault()
-    if(user)
-    console.log('exists')
-    else
-    router.push('/api/auth/login')
-  }
   
   return (
     <Grid
@@ -112,7 +106,10 @@ export default function SpanningTable() {
             </TableBody>
             <div className="buttons" align="right">
             {/* <button type="button" className="add-to-cart" onClick="">Place Order</button> */}
-              <button type="button" className="buy-now" onClick={checkout}>Checkout</button>
+              <Link href="/billingandshipping">
+                <button type="button" className="buy-now" >Checkout</button>
+              </Link>
+              
               <button type="button" className="buy-now" onClick={() => emptyCart()}>Empty Cart</button>
             </div>
             </>) : <Typography variant="h5">No Product Found</Typography>}

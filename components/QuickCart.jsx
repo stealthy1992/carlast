@@ -5,6 +5,9 @@ import { useCarContextProvider } from '../context/CarContextProvider'
 import { urlFor} from '../lib/client'
 import Link from 'next/link';
 import { useUser } from '@auth0/nextjs-auth0';
+import LoginIcon from '@mui/icons-material/Login';
+import LogoutIcon from '@mui/icons-material/Logout';
+import Tooltip from '@mui/material/Tooltip';
 
 import { useState } from 'react';
 import { useEffect } from 'react';
@@ -16,15 +19,23 @@ export default function QuickCart({user}) {
 
   return (
     <>
+    <Box marginRight={1}>
+    <Tooltip title="Cart">
       <button type="button" className="cart-icon" onClick={() => setState(true)}>
             <AiOutlineShopping />
             <span className="cart-item-qty">{count}</span>
       </button>
-      <button type="button" className="cart-icon">
-             <Link href={ user ? "/api/auth/logout" : "/api/auth/login"}>
-                { user ? 'Logout' : 'Login'}
-             </Link>
-      </button>
+    </Tooltip>
+    
+    </Box>
+      
+      <Box marginRight={1}>
+        <button type="button" className="cart-icon">
+              <Link href={ user ? "/api/auth/logout" : "/api/auth/login"}>
+                  { user ? <Tooltip title="Log Out"><LogoutIcon /></Tooltip> : <Tooltip title="Log In"><LoginIcon /></Tooltip>}
+              </Link>
+        </button>
+      </Box>
           <Drawer
             anchor='right'
             role='presentation'
