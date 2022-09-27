@@ -4,9 +4,10 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
-    "lint": "next lint"
+    "build": "sanity build public -y",
+    "start": "sanity start",
+    "lint": "next lint",
+    "test": "sanity check"
   },
   "dependencies": {
     "@auth0/nextjs-auth0": "^1.9.1",
@@ -33,6 +34,7 @@
     "stripe": "^8.209.0"
   },
   "devDependencies": {
+    "@sanity/cli": "^2.33.3",
     "eslint": "8.21.0",
     "eslint-config-next": "12.2.3"
   }
