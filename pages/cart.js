@@ -51,10 +51,10 @@ export default function SpanningTable() {
   const router = useRouter()
   const { user } = useUser()
   
-  useEffect(() => {
-    if(!user)
-    router.push('/api/auth/login')
-  })
+  // useEffect(() => {
+  //   if(!user)
+  //   router.push('/api/auth/login')
+  // })
   
   return (
     <Grid
@@ -106,7 +106,7 @@ export default function SpanningTable() {
             </TableBody>
             <div className="buttons" align="right">
             {/* <button type="button" className="add-to-cart" onClick="">Place Order</button> */}
-              <Link href="/billingandshipping">
+              <Link href="">
                 <button type="button" className="buy-now" >Checkout</button>
               </Link>
               
