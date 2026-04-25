@@ -12,7 +12,7 @@ import Paper from '@mui/material/Paper';
 import { useCarContextProvider } from '../context/CarContextProvider';
 import { urlFor } from '../lib/client';
 import  Link  from 'next/link'
-import GetStripe from './GetStripe';
+import GetStripe from './getStripe';
 
 const BillingAndShipping = () => {
 
