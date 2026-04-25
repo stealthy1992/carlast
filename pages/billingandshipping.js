@@ -12,7 +12,7 @@ import Paper from '@mui/material/Paper';
 import { useCarContextProvider } from '../context/CarContextProvider';
 import { urlFor } from '../lib/client';
 import  Link  from 'next/link'
-import GetStripe from './getStripe';
+// import GetStripe from './getStripe';
 
 const BillingAndShipping = () => {
 
@@ -329,28 +329,28 @@ const countryList = [
 ];
 
 
-const handleCheckout = async () => {
+// const handleCheckout = async () => {
 	
-	const stripe = await GetStripe()
+// 	const stripe = await GetStripe()
 	
-	const response = await fetch('api/stripe', {
-		method: 'POST',
-		headers: {
-			'Content-Type': 'application/json',
+// 	const response = await fetch('api/stripe', {
+// 		method: 'POST',
+// 		headers: {
+// 			'Content-Type': 'application/json',
 
-		},
-		body: JSON.stringify({name: 'carlast'})
-	})
+// 		},
+// 		body: JSON.stringify({name: 'carlast'})
+// 	})
 
-	if(response.statusCode === 500)
-	return
+// 	if(response.statusCode === 500)
+// 	return
 
-	const data = await response.json()
+// 	const data = await response.json()
 	
-	stripe.redirectToCheckout({
-		sessionId: data.id
-	})
-}
+// 	stripe.redirectToCheckout({
+// 		sessionId: data.id
+// 	})
+// }
   return (
 
     // new code //
