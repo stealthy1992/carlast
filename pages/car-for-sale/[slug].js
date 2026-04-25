@@ -156,10 +156,11 @@ export const getStaticProps = async ({params: { slug }}) => {
     const query = `*[_type == "carsforsale" && slug.current == '${slug}'][0]`
     const car = await client.fetch(query)
 
-    return{
+    return {
         props: {
             car
-        }
+        },
+        revalidate: 60  // ← add this
     }
 }
 

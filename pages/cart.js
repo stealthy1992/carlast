@@ -14,7 +14,7 @@ import { useUser } from '@auth0/nextjs-auth0';
 import { useRouter } from 'next/router'
 import { useEffect } from 'react';
 import Link from 'next/link';
-// import { Stripe, loadStripe } from '@stripe/stripe-js'
+import { Stripe, loadStripe } from '@stripe/stripe-js'
 
 const TAX_RATE = 0.07;
 
@@ -106,7 +106,7 @@ export default function SpanningTable() {
             </TableBody>
             <div className="buttons" align="right">
             {/* <button type="button" className="add-to-cart" onClick="">Place Order</button> */}
-              <Link href="">
+              <Link href="/billingandshipping">
                 <button type="button" className="buy-now" >Checkout</button>
               </Link>
               

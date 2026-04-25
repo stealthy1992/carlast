@@ -7,6 +7,7 @@
   "author": "Abdul Rehman <rehmanmughal1992@gmail.com>",
   "license": "UNLICENSED",
   "scripts": {
+    "dev": "sanity dev",
     "start": "sanity start",
     "build": "sanity build"
   },
