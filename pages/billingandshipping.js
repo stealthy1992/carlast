@@ -12,7 +12,7 @@ import Paper from '@mui/material/Paper';
 import { useCarContextProvider } from '../context/CarContextProvider';
 import { urlFor } from '../lib/client';
 import  Link  from 'next/link'
-import getStripe from './GetStripe';
+import GetStripe from './GetStripe';
 
 const BillingAndShipping = () => {
 
@@ -331,7 +331,7 @@ const countryList = [
 
 const handleCheckout = async () => {
 	
-	const stripe = await getStripe()
+	const stripe = await GetStripe()
 	
 	const response = await fetch('api/stripe', {
 		method: 'POST',
