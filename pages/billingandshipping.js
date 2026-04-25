@@ -12,9 +12,9 @@ import Paper from '@mui/material/Paper';
 import { useCarContextProvider } from '../context/CarContextProvider';
 import { urlFor } from '../lib/client';
 import  Link  from 'next/link'
-import getStripe from './getStripe';
+import getStripe from './GetStripe';
 
-const billingandshipping = () => {
+const BillingAndShipping = () => {
 
 const { value } = useCarContextProvider()
 const router = useRouter()
@@ -437,7 +437,7 @@ style={{ minHeight: '70vh' }}
 									label="Country"
 									onChange={(e) => setCountry(e.target.value)}
 									>
-									{ countryList.map((country) => <MenuItem value={country}>{country}</MenuItem>)}
+									{ countryList.map((country) => <MenuItem key={country._id} value={country}>{country}</MenuItem>)}
 									</Select>
 								</FormControl>
 								
@@ -497,7 +497,7 @@ style={{ minHeight: '70vh' }}
 									label="Country"
 									onChange={(e) => setCountry(e.target.value)}
 									>
-									{ countryList.map((country) => <MenuItem value={country}>{country}</MenuItem>)}
+									{ countryList.map((country) => <MenuItem key={country._id} value={country}>{country}</MenuItem>)}
 									</Select>
 								</FormControl>
 								
@@ -733,4 +733,4 @@ style={{ minHeight: '70vh' }}
 }
 
 
-export default billingandshipping
+export default BillingAndShipping 
