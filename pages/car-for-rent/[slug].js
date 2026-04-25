@@ -256,7 +256,8 @@ export const getStaticProps = async ({params: { slug }}) => {
     return{
         props: {
             car
-        }
+        },
+        revalidate: 60  // ← add this
     }
 }
 
