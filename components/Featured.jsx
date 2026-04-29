@@ -13,14 +13,18 @@ const Featured = ({car}) => {
         <Box m={3}>
         <Card sx={{ maxWidth: 345 }}>
         {console.log(car)}
-      <Link href={ car.price ? `/car-for-sale/${car.slug.current}` : `/car-for-rent/${car.slug.current}`}>
+        <Link href={car?.slug?.current 
+          ? (car.price ? `/car-for-sale/${car.slug.current}` : `/car-for-rent/${car.slug.current}`) 
+          : '/'
+        }>
+      {/* <Link href={ car.price ? `/car-for-sale/${car.slug.current}` : `/car-for-rent/${car.slug.current}`}> */}
       <CardActionArea>
-        <CardMedia
+      <CardMedia
           component="img"
           height="140"
-          image={urlFor(car.images[0])}
-          alt="green iguana"
-        />
+          image={car?.images?.[0]?.asset?._ref ? urlFor(car.images[0]) : '/favicon.ico'}
+          alt={car?.name || 'Car image'}
+      />
         <CardContent>
           <Typography gutterBottom variant="h5" component="div">
             {car.name}
@@ -30,7 +34,11 @@ const Featured = ({car}) => {
       </CardActionArea>
       </Link>
       <CardActions>
-      <Link href={car.price ? `/car-for-sale/${car.slug.current}` : `/car-for-rent/${car.slug.current}`}>
+      <Link href={car?.slug?.current 
+          ? (car.price ? `/car-for-sale/${car.slug.current}` : `/car-for-rent/${car.slug.current}`) 
+          : '/'
+      }>
+      {/* <Link href={car.price ? `/car-for-sale/${car.slug.current}` : `/car-for-rent/${car.slug.current}`}> */}
         {car.price ? <Button variant="contained" size="small" color="error">Buy Now</Button> : <Button variant="contained" size="small" color="error">Rent Now</Button>}
       </Link>
       </CardActions>
