@@ -133,34 +133,37 @@ useEffect(() => {
 }
 
 export const getStaticPaths = async () => {
-
-    const query = `*[_type == "carsforsale"]{slug{
+    const query = `*[_type == "carsforsale" && defined(slug.current)]{slug{
         current
     }}`
 
-    const car = await client.fetch(query)
-    const paths = car.map((item) => ({
-        params: {
-            slug: item.slug.current
-        }
-    }))
+    const cars = await client.fetch(query)
 
-    return{
+    const paths = cars
+        .filter((item) => item?.slug?.current)  // extra JS safety net
+        .map((item) => ({
+            params: {
+                slug: item.slug.current
+            }
+        }))
+
+    return {
         paths,
         fallback: 'blocking'
     }
 }
 
-export const getStaticProps = async ({params: { slug }}) => {
-
+export const getStaticProps = async ({ params: { slug } }) => {
     const query = `*[_type == "carsforsale" && slug.current == '${slug}'][0]`
     const car = await client.fetch(query)
 
+    if (!car) {
+        return { notFound: true }
+    }
+
     return {
-        props: {
-            car
-        },
-        revalidate: 60  // ← add this
+        props: { car },
+        revalidate: 60
     }
 }
 
