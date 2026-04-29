@@ -1,0 +1,114 @@
+{
+  "cookies": [
+    {
+      "name": "_GRECAPTCHA",
+      "value": "09AKhCRwhBdUkcnV0f35-SbvBfOz37s4UHmH-BrcXt7jzYorXRXXKCUlSLRT8FkbSaggskoBYxuDobCQ7I-__h49g",
+      "domain": "www.google.com",
+      "path": "/recaptcha",
+      "expires": 1793017035.320428,
+      "httpOnly": true,
+      "secure": true,
+      "sameSite": "None"
+    },
+    {
+      "name": "tempSession",
+      "value": "s%3AUJ66DjEKU5hbiOpjDxnTqTYtXqxEK6Ho.as9hHtWrQg3GVDYwuS81scdt5iuG4Tfe6S77cwtGfRM",
+      "domain": "api.sanity.io",
+      "path": "/",
+      "expires": 1777465637.889953,
+      "httpOnly": true,
+      "secure": true,
+      "sameSite": "None"
+    },
+    {
+      "name": "rl_anonymous_id",
+      "value": "RS_ENC_v3_ImM3MzkyNTQ4LTkwNmMtNDEyOS1iMDU5LTBmYWEyMDc5NzJlNiI%3D",
+      "domain": ".sanity.io",
+      "path": "/",
+      "expires": 1809001032,
+      "httpOnly": false,
+      "secure": false,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "rl_page_init_referrer",
+      "value": "RS_ENC_v3_IiRkaXJlY3Qi",
+      "domain": ".sanity.io",
+      "path": "/",
+      "expires": 1809001032,
+      "httpOnly": false,
+      "secure": false,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "rl_session",
+      "value": "RS_ENC_v3_eyJpZCI6MTc3NzQ2NTAzMjg2NywiZXhwaXJlc0F0IjoxNzc3NDY2ODM1MzgyLCJ0aW1lb3V0IjoxODAwMDAwLCJhdXRvVHJhY2siOnRydWUsInNlc3Npb25TdGFydCI6ZmFsc2V9",
+      "domain": ".sanity.io",
+      "path": "/",
+      "expires": 1809001035,
+      "httpOnly": false,
+      "secure": false,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "connect.sid",
+      "value": "s%3APbIUa9oto_ettwLkn1Sny1HLsKk5X_OL.gaMbILx2A9raD7TyAVmXRWiO9ksOfXKq5FbDRffnWwA",
+      "domain": "accounts.sanity.io",
+      "path": "/",
+      "expires": 1777468635.980256,
+      "httpOnly": true,
+      "secure": true,
+      "sameSite": "None"
+    },
+    {
+      "name": "sanitySession",
+      "value": "skU2O0sNDAa7BqokpeKWzmr1WRuqj0qPSVMR4XDzNu8zPryvoKZzOiTVFN4NvW5A6dKVuXi3U0YO5RKE",
+      "domain": ".bushe0bq.api.sanity.io",
+      "path": "/",
+      "expires": 1809001038.561037,
+      "httpOnly": true,
+      "secure": true,
+      "sameSite": "None"
+    }
+  ],
+  "origins": [
+    {
+      "origin": "https://accounts.sanity.io",
+      "localStorage": [
+        {
+          "name": "rudder_36b7yo5upzyoaXqG2VWloKViuSg.a8104e03-b284-436c-9d3a-b22a07c4230a.ack",
+          "value": "\"1777465037952\""
+        },
+        {
+          "name": "_grecaptcha",
+          "value": "09AKhCRwikAjLIGxrepeAdH8UYcF3GUwIrk6gUG24IhdYc30QXs9VbEXq-kfJ7NQgie8_c3hAHU7qBY5KV5w8KWtaIrFeZY2fAukKz5zCwqoWyQnSK67LiKcZp6EsI7xvx"
+        },
+        {
+          "name": "rudder_36b7yo5upzyoaXqG2VWloKViuSg.a8104e03-b284-436c-9d3a-b22a07c4230a.queue",
+          "value": "\"[]\""
+        },
+        {
+          "name": "rudder_36b7yo5upzyoaXqG2VWloKViuSg.a8104e03-b284-436c-9d3a-b22a07c4230a.inProgress",
+          "value": "\"{}\""
+        },
+        {
+          "name": "rudder_36b7yo5upzyoaXqG2VWloKViuSg.a8104e03-b284-436c-9d3a-b22a07c4230a.batchQueue",
+          "value": "\"[]\""
+        }
+      ]
+    },
+    {
+      "origin": "https://www.google.com",
+      "localStorage": [
+        {
+          "name": "rc::a",
+          "value": "MXA5Y2YxejR2MjJ1Mg=="
+        },
+        {
+          "name": "rc::f",
+          "value": "0aAJhJSMRPVC-zYGmAFn3wEEcp_Nhw5cjKtQvDsV7bsDD2JsK3qsRbx9QdKHM_XpuTVNLMlBk"
+        }
+      ]
+    }
+  ]
+}
