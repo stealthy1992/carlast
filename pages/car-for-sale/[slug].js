@@ -154,11 +154,16 @@ export const getStaticPaths = async () => {
 }
 
 export const getStaticProps = async ({ params: { slug } }) => {
+    const freshClient = client.withConfig({ useCdn: false }) // bypass CDN
+
     const query = `*[_type == "carsforsale" && slug.current == '${slug}'][0]`
-    const car = await client.fetch(query)
+    const car = await freshClient.fetch(query)
 
     if (!car) {
-        return { notFound: true }
+        return { 
+            notFound: true,
+            revalidate: 10 
+        }
     }
 
     return {

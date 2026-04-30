@@ -1,6 +1,8 @@
 const DetailPage = require('../page-objects/DetailPage');
 const { expect, test } = require('@playwright/test');
 const { fetchCars, fetchCarsForSale, fetchCarsForRent, refToUrl } = require('../../helpers/sanity-api');
+const { urlFor, client } = require('../../../lib/client');
+const { testClient } = require('../../helpers/sanityTestClient');
 const HomePage = require('../page-objects/HomePage');
 
 test.describe('This will test all the features of the detail page', () => {
@@ -146,6 +148,81 @@ test.describe('This will test all the features of the detail page', () => {
             
       
     })
+
+    test('This will test the car detail page based on a pre-defined slug', async () => {
+
+        const slug = 'geely-coolray';
+        const carName = await detailPage.testSlug(slug);
+        await expect(carName).toContain("Geely Coolray");
+    })
+
+    test('missing slug returns 404 not 500', async ({ page }) => {
+        const response = await page.goto('https://carlast.vercel.app/car-for-sale/non-existent-slug-xyz')
+        expect(response.status()).toBe(404)
+    })
+
+    test('fetches cars with valid slugs only', async () => {
+        const query = `*[_type == "carsforsale" && defined(slug.current)]{slug{ current }}`
+        const cars = await client.fetch(query)
+    
+        cars.forEach(car => {
+            expect(car.slug).not.toBeNull()
+            expect(car.slug.current).toBeTruthy()
+            expect(typeof car.slug.current).toBe('string')
+        })
+    })
+    
+    test('fetches a specific car by slug', async () => {
+        const slug = 'geely-coolray'
+        const query = `*[_type == "carsforsale" && slug.current == '${slug}'][0]`
+        const car = await client.fetch(query)
+    
+        expect(car).not.toBeNull()
+        expect(car.slug.current).toBe(slug)
+    })
+
+    test('single car page matches sanity document', async ({ page }) => {
+
+        // Step 1: Fetch the document directly from Sanity via GROQ
+        const query = `*[_type == "carsforsale" && slug.current == "geely-coolray"][0]{
+            name,
+            price,
+            modelyear,
+            mileage,
+            manufacturer,
+            registrationyear,
+            sittingcapacity,
+            color,
+            transmission,
+            description,
+            "slug": slug.current,
+            "imageUrl": image.asset->url
+        }`
+        const car = await testClient.fetch(query)
+    
+        // Step 2: Visit that car's page on the frontend
+        await page.goto(`https://carlast.vercel.app/car-for-sale/${car.slug}`)
+        
+        // Step 3: Compare each field visually
+        const { name, modelyear, manufacturer, registrationyear, mileage, sittingcapacity, color, transmission, price, description } = await detailPage.verifyCarData();
+
+        const finalPrice = Number(price.replace('$',''));
+        expect(name).toBe(car.name);
+        expect(Number(modelyear)).toBe(car.modelyear);
+        expect(manufacturer).toBe(car.manufacturer);
+        expect(Number(registrationyear)).toBe(car.registrationyear);
+        expect(Number(mileage)).toBe(car.mileage);
+        expect(Number(sittingcapacity)).toBe(car.sittingcapacity);
+        expect(color).toBe(car.color);
+        expect(transmission).toBe(car.transmission);
+        expect(finalPrice).toBe(car.price);
+        expect(description).toBe(car.description);
+    
+        // Step 4: Check image is rendered with correct source
+        // const image = page.locator(`img[src*="${car.imageUrl}"]`)
+        // await expect(image).toBeVisible()
+    })
+
 
     test.skip('This will test if images are rendering correctly', async () => {
 

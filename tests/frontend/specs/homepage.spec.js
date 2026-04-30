@@ -1,5 +1,7 @@
 const { expect, test } = require('@playwright/test');
 const HomePage = require('../page-objects/HomePage');
+const { urlFor, client } = require('../../../lib/client');
+const { testClient } = require('../../helpers/sanityTestClient');
 const { fetchCars, fetchCarsForSale, fetchCarsForRent, refToUrl } = require('../../helpers/sanity-api');
 
 test.describe('This will test the homepage features', () => {
@@ -119,4 +121,27 @@ test.describe('This will test the homepage features', () => {
         const h1 = await homePage.fetchRentCard('Dayz');
         await expect(page).toHaveURL(/\/car-for-rent\/.+/);
       });
+
+      test('all cars from sanity appear on listings page', async ({ page }) => {
+
+        const carNames = [];
+        // Step 1: Fetch all valid cars from Sanity
+        const query = `*[_type == "carsforsale" && defined(slug.current)]{
+            name,
+            "slug": slug.current
+        }`
+        const cars = await testClient.fetch(query)
+    
+        for(let car of carsForSale){
+          carNames.push(car.name);
+        }
+
+        for(let item of cars){
+          expect(carNames).toContain(item.name);
+          // console.log('query result is: ',item);
+          // console.log('visual result is: ',carNames);
+        }
+        
+        await expect(carNames).toHaveLength(cars.length)
+    })
 })

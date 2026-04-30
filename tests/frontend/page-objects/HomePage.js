@@ -71,7 +71,9 @@ class HomePage extends BasePage{
         const withoutQuery = filename.split('?')[0]; // "fea05cad-3345x2040.jpg"
         const assetId = withoutQuery.split('-')[0];  // "fea05cad"
         return assetId;
-      }
+    }
+
+    
 
 }
 

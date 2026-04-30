@@ -11,6 +11,7 @@ test.describe('This will test the sanity dashboard', () => {
     })
 
     test('This will access left side bar items', async ({page}) => {
+        console.log(SANITY_URL);
         await page.goto(SANITY_URL);
         await page.waitForLoadState('networkidle');
         await page.waitForSelector('[data-testid="pane-content"]', { state: 'visible' });

@@ -64,6 +64,12 @@ class DetailPage extends BasePage{
         return srcList;
     }
 
+    async testSlug(slug){
+        await this.page.goto(`https://carlast.vercel.app/car-for-sale/${slug}`);
+        return await this.selectors.carTitle.innerText();
+        
+    }
+
 }
 
 module.exports=DetailPage

@@ -21,9 +21,9 @@ class DashboardPage extends BasePage{
         const form = this.page.locator('form[data-as="form"]');
         await form.waitFor({ state: 'visible' });
 
-        await form.locator('[data-testid="input-name"] input').fill('Toyota Corolla');
+        await form.locator('[data-testid="input-name"] input').fill('Daihatsu Move');
         await form.locator('[data-testid="input-modelyear"] input').fill('2022');
-        await form.locator('[data-testid="input-manufacturer"] input').fill('Toyota');
+        await form.locator('[data-testid="input-manufacturer"] input').fill('Daihatsu');
         await form.locator('[data-testid="input-registrationyear"] input').fill('2022');
         await form.locator('[data-testid="input-mileage"] input').fill('15000');
         await form.locator('[data-testid="input-sittingcapacity"] input').fill('5');
@@ -35,7 +35,7 @@ class DashboardPage extends BasePage{
         // Set the file
         const fileInput = this.page.locator('input[type="file"]');
         await fileInput.waitFor({ state: 'attached' });
-        await fileInput.setInputFiles('C:/Users/Rehman/Downloads/carImage.webp');
+        await fileInput.setInputFiles('C:/Users/Rehman/Downloads/move.jpg');
         // await dialogueCard.locator('[data-testid="file-input-upload-button"]').click();
         await dialogueCard.locator('[data-testid="hotspot-image-input"]').waitFor({ state: 'visible'});
         await dialogueCard.locator('[aria-label="Close dialog"]').click();

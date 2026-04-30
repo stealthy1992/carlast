@@ -34,7 +34,9 @@ async function globalSetup() {
   await page.goto(process.env.SANITY_URL);
 
  // Click "Continue with email"
- await page.click('text=E-mail / password');
+//  await page.click('button[text=E-mail / password]');
+ await page.getByRole('button', { name: 'E-mail / password' }).click();
+
 
  // Fill in email and password
  await page.fill('input[name="email"]', process.env.SANITY_EMAIL);
