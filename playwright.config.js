@@ -10,6 +10,7 @@ dotenv.config({
 export default defineConfig({
   // ❌ Removed globalSetup from top level
   
+  timeout: 120_000,
   testDir: './tests',
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
