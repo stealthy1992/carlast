@@ -1,5 +1,5 @@
 // @ts-check
-import { defineConfig, devices } from '@playwright/test';
+const { defineConfig, devices } = require('@playwright/test');
 const dotenv = require('dotenv');
 const path = require('path');
 
@@ -7,92 +7,87 @@ dotenv.config({
   path: path.resolve(__dirname, 'sanity_carlast', '.env')
 });
 
-export default defineConfig({
-  // ❌ Removed globalSetup from top level
-  
+module.exports = defineConfig({
+
+  // ✅ globalSetup runs global-setup.js once before all tests
+  // This is the correct mechanism — NOT a 'sanity-setup' project with testMatch
+  globalSetup: require.resolve('./global-setup.js'),
+
   timeout: 120_000,
   testDir: './tests',
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
   workers: process.env.CI ? 1 : undefined,
-  reporter: [['html'], ['list']],
-  
+  reporter: [['html', { outputFolder: 'playwright-report' }], ['list']],
+
   use: {
-    // ❌ Removed storageState from top level
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
   },
 
   projects: [
-    // ── Sanity auth setup (runs once before Sanity tests) ──
-    {
-      name: 'sanity-setup',
-      testMatch: '**/global-setup.js',
-    },
 
-    // ── Sanity backend tests ──
+    // ── Backend (Sanity Studio) tests ──────────────────────────────
+    // Uses .auth/user.json produced by globalSetup (global-setup.js)
     {
-      name: 'chromium',
+      name: 'backend-chromium',
       testDir: './tests/backend/specs',
-      dependencies: ['sanity-setup'],
       use: {
         ...devices['Desktop Chrome'],
         storageState: path.join(__dirname, '.auth/user.json'),
       },
     },
     {
-      name: 'firefox',
+      name: 'backend-firefox',
       testDir: './tests/backend/specs',
-      dependencies: ['sanity-setup'],
       use: {
         ...devices['Desktop Firefox'],
         storageState: path.join(__dirname, '.auth/user.json'),
       },
     },
     {
-      name: 'webkit',
+      name: 'backend-webkit',
       testDir: './tests/backend/specs',
-      dependencies: ['sanity-setup'],
       use: {
         ...devices['Desktop Safari'],
         storageState: path.join(__dirname, '.auth/user.json'),
       },
     },
     {
-      name: 'mobile-chrome',
+      name: 'backend-mobile-chrome',
       testDir: './tests/backend/specs',
-      dependencies: ['sanity-setup'],
       use: {
         ...devices['Pixel 5'],
         storageState: path.join(__dirname, '.auth/user.json'),
       },
     },
 
-    // ── Frontend tests — clean context, no Sanity auth ──
+    // ── Frontend (NextJS) tests ─────────────────────────────────────
+    // Clean context — no Sanity auth needed
     {
-      name: 'chromium',
+      name: 'frontend-chromium',
       testDir: './tests/frontend/specs',
       use: {
         ...devices['Desktop Chrome'],
       },
     },
     {
-      name: 'firefox',
+      name: 'frontend-firefox',
       testDir: './tests/frontend/specs',
       use: {
         ...devices['Desktop Firefox'],
       },
     },
     {
-      name: 'webkit',
+      name: 'frontend-webkit',
       testDir: './tests/frontend/specs',
       use: {
         ...devices['Desktop Safari'],
       },
     },
     {
-      name: 'mobile-chrome',
+      name: 'frontend-mobile-chrome',
       testDir: './tests/frontend/specs',
       use: {
         ...devices['Pixel 5'],
@@ -103,7 +98,8 @@ export default defineConfig({
   webServer: {
     command: 'npm run dev',
     url: 'http://localhost:3000',
-    reuseExistingServer: !process.env.CI,
+    reuseExistingServer: !process.env.CI, // ✅ always spins up a fresh server on CI
     timeout: 120_000,
   },
+
 });

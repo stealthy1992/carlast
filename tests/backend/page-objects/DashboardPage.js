@@ -14,10 +14,94 @@ class DashboardPage extends BasePage{
         await this.clickSidebarItem();
     }
 
+    // ─────────────────────────────────────────────────────────────────
+    // Scrolls through the Virtuoso gallery until it finds the image
+    // matching car.image, then clicks it.
+    //
+    // WHY THIS IS NEEDED:
+    // Virtuoso is a virtual scroller — it only renders items currently
+    // visible in the viewport. Your original loop only iterated over
+    // whatever was rendered at load time. If the matching image was
+    // below the fold, the loop completed without finding it and no
+    // image got attached — silently, with no error thrown.
+    //
+    // HOW THE FIX WORKS:
+    // 1. After each full pass over currently-rendered items, it scrolls
+    //    the gallery container down by one viewport height.
+    // 2. It waits briefly for Virtuoso to render the newly visible items.
+    // 3. It repeats until the image is found OR the gallery stops
+    //    producing new items after a scroll (meaning we've reached the
+    //    bottom without a match).
+    // 4. If no match is found after exhausting the gallery, it throws a
+    //    clear error so the test fails loudly rather than silently
+    //    publishing a document with no image attached.
+    // ─────────────────────────────────────────────────────────────────
+    async findAndSelectImage(car) {
+        const scrollContainer = this.page.locator('[data-test-id="virtuoso-scroller"]');
+        const gallery         = this.page.locator('.virtuoso-grid-list');
+        const imageTarget     = car.image.trim();
+
+        let found            = false;
+        let previousCount    = -1;
+        const MAX_SCROLLS    = 50; // safety cap — prevents infinite loop
+        let scrollAttempts   = 0;
+
+        console.log(`🔍 Searching gallery for image: "${imageTarget}"`);
+
+        while (!found && scrollAttempts < MAX_SCROLLS) {
+
+            // Get all currently-rendered grid items
+            const items      = gallery.locator('.virtuoso-grid-item');
+            const itemCount  = await items.count();
+
+            console.log(`  Scroll attempt ${scrollAttempts + 1} — rendered items: ${itemCount}`);
+
+            // Loop over every currently-rendered item
+            for (let i = 0; i < itemCount; i++) {
+                const rawText  = await items.nth(i).innerText();
+                const trimmed  = rawText.trim();
+
+                if (trimmed === imageTarget) {
+                    console.log(`  ✅ Matched: "${trimmed}" — clicking`);
+                    await items.nth(i).click();
+                    await this.page.waitForTimeout(500);
+                    found = true;
+                    break;
+                }
+            }
+
+            if (found) break;
+
+            // Check if scrolling produced new items — if count is the
+            // same as last scroll, we've hit the bottom of the gallery
+            if (itemCount === previousCount) {
+                console.error(`  ❌ Reached end of gallery without finding "${imageTarget}"`);
+                break;
+            }
+
+            previousCount = itemCount;
+
+            // Scroll the Virtuoso container down by one viewport height
+            await scrollContainer.evaluate(el => {
+                el.scrollTop += el.clientHeight;
+            });
+
+            // Wait for Virtuoso to render newly visible items
+            await this.page.waitForTimeout(400);
+            scrollAttempts++;
+        }
+
+        if (!found) {
+            throw new Error(
+                `Image "${imageTarget}" was not found in the Sanity Media gallery. ` +
+                `Check that the image is uploaded in your Sanity studio with exactly this filename.`
+            );
+        }
+    }
+
     async addingCar(car){
 
         let dialogueCard;
-        let isSearching = true;
 
         console.log(car);
         await this.page.locator('#carsforsale-carsforsale-0').waitFor({state: 'visible'});
@@ -37,33 +121,16 @@ class DashboardPage extends BasePage{
         await this.page.locator('[data-ui="DialogCard"]').waitFor({ state: 'visible'});
         dialogueCard = await this.page.locator('[data-ui="DialogCard"]');
         await dialogueCard.locator('[data-testid="file-input-multi-browse-button"]').click();
-        // await this.page.locator('div', { name: 'ImageInput4_assetImageButton'}).waitFor({state: 'visible'});
+
         await this.page.locator('[data-testid="file-input-browse-button-media"]').waitFor({ state: 'visible'});
         await this.page.locator('[data-testid="file-input-browse-button-media"]').click();
-        // await this.page.locator('div', { has: this.page.locator('button', { hasText: 'Upload images'})}).waitFor({ state: 'visible'});
-        // await this.page.locator('div[data-scheme="dark"]').first().waitFor({state: 'visible'});
-        // await this.page.locator('[data-test-id="virtuoso-scroller"]').waitFor({ state: 'visible'});
-        // const gallery = await this.page.locator('[data-test-id="virtuoso-scroller"]');
+
+        // Wait for the Virtuoso gallery to render its initial items
         await this.page.locator('.virtuoso-grid-list').waitFor({ state: 'visible'});
-        const gallery = await this.page.locator('.virtuoso-grid-list');
-        const images = await gallery.locator('.virtuoso-grid-item');
-        const imageCount = await gallery.locator('.virtuoso-grid-item').count();
-        // const imageTitle = car.image.trim();
-        console.log('idenfied images are: ',imageCount);
-     
-        for(let i=0; i < imageCount; i++){
-            const imageName = await images.nth(i).innerText();
-            const trimmed = imageName.trim();
-            console.log('image is: ',trimmed);
-            if(trimmed == car.image){
-                console.log('matched');
-                await images.nth(i).click();
-                await this.page.waitForTimeout(500);
-                break; 
-            }                  
-         }
-        
-        
+
+        // ✅ Replaced original static loop with scroll-aware image finder
+        await this.findAndSelectImage(car);
+
         await this.page.locator('[data-ui="DialogCard"]', { hasText: 'Edit Image'}).waitFor({ state: 'visible'});
         dialogueCard = await this.page.locator('[data-ui="DialogCard"]', { hasText: 'Edit Image'});
         await dialogueCard.locator('[aria-label="Close dialog"]').click();
@@ -74,21 +141,18 @@ class DashboardPage extends BasePage{
         await this.page.locator('[data-testid="action-Publish"]').click();
         
         await this.page.waitForSelector(
-        '[data-testid="action-Publish"][data-disabled="true"]',
-        { state: 'visible', timeout: 15000 }
+            '[data-testid="action-Publish"][data-disabled="true"]',
+            { state: 'visible', timeout: 15000 }
         );
 
-        // Step 3: Wait for the button to fully transition to "Published" 
-        // (disabled=true as a real HTML attribute, not just data-disabled)
         await this.page.waitForSelector(
-        '[data-testid="action-Publish"][disabled]',
-        { state: 'visible', timeout: 15000 }
+            '[data-testid="action-Publish"][disabled]',
+            { state: 'visible', timeout: 15000 }
         );
 
-        // Step 4: Wait for the success toast to appear
         await this.page.waitForSelector(
-        'text="The document was published"',
-        { state: 'visible', timeout: 10000 }
+            'text="The document was published"',
+            { state: 'visible', timeout: 10000 }
         );
     }
 }
