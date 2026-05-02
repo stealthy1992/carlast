@@ -91,7 +91,11 @@ pipeline {
         // ──────────────────────────────────────────────────────────────
         stage('Sanity Pre-flight Check') {
             steps {
-                bat 'curl -sf -H "Authorization: Bearer %SANITY_API_TOKEN%" "https://%SANITY_PROJECT_ID%.api.sanity.io/v2021-10-21/data/query/%SANITY_DATASET%?query=*[0]" || (echo Sanity API unreachable - check credentials && exit 1)'
+                bat '''
+                    echo SANITY_PROJECT_ID = %SANITY_PROJECT_ID%
+                    echo SANITY_DATASET = %SANITY_DATASET%
+                    curl -v -H "Authorization: Bearer %SANITY_API_TOKEN%" "https://%SANITY_PROJECT_ID%.api.sanity.io/v2021-10-21/data/query/%SANITY_DATASET%?query=*[0]"
+                '''
             }
         }
 
