@@ -3,9 +3,9 @@ pipeline {
 
     environment {
         // ── Sanity credentials (add all of these in Jenkins → Credentials) ──
-        SANITY_PROJECT_ID             = credentials('sanity-project-id')
+        SANITY_PROJECT_ID             = 'bushe0bq'
         SANITY_DATASET                = 'production'
-        SANITY_API_TOKEN              = credentials('sanity-api-token')
+        SANITY_API_TOKEN              = 'skvvV1flkMD5Vfj6daS3aMtOxhx6y2NhfhHGF5Z4UnpiJFoRi7lN1rqqmbLRu0mxkanumArzYYbiAe6DThPnMglGshGM9f8bHuinLhMPwhH0wRHYRCneQ5vvHXlA5SOnEDS846NvywBNxR2edaIYblufUURfqSDU4roOfYZdBfYX032nxKTz'
         SANITY_EMAIL                  = credentials('sanity-email')
         SANITY_PASSWORD               = credentials('sanity-password')
         SANITY_URL                    = credentials('sanity-url')
@@ -79,7 +79,7 @@ pipeline {
         // ──────────────────────────────────────────────────────────────
         stage('Sanity Pre-flight Check') {
             steps {
-                bat 'curl -sf -H "Authorization: Bearer %SANITY_API_TOKEN%" "https://bushe0bq.api.sanity.io/v2021-10-21/data/query/%SANITY_DATASET%?query=*[0]" || (echo Sanity API unreachable - check credentials && exit 1)'
+                bat 'curl -sf -H "Authorization: Bearer %SANITY_API_TOKEN%" "https://%SANITY_PROJECT_ID%.api.sanity.io/v2021-10-21/data/query/%SANITY_DATASET%?query=*[0]" || (echo Sanity API unreachable - check credentials && exit 1)'
             }
         }
 
