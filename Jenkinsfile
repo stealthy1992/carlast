@@ -39,13 +39,7 @@ pipeline {
 
     stages {
 
-        stage('Debug Credentials') {
-            steps {
-                bat 'echo Project ID starts with: %SANITY_PROJECT_ID:~0,4%'
-                bat 'echo Token starts with: %SANITY_API_TOKEN:~0,4%'
-                bat 'echo Dataset is: %SANITY_DATASET%'
-            }
-        }
+        
 
         // ──────────────────────────────────────────────────────────────
         // STAGE 1: Checkout & Install Dependencies
@@ -78,6 +72,14 @@ pipeline {
                     echo SANITY_EMAIL=%SANITY_EMAIL%>> sanity_carlast\\.env
                     echo SANITY_PASSWORD=%SANITY_PASSWORD%>> sanity_carlast\\.env
                 '''
+            }
+        }
+
+        stage('Debug Credentials') {
+            steps {
+                bat 'echo Project ID starts with: %SANITY_PROJECT_ID:~0,4%'
+                bat 'echo Token starts with: %SANITY_API_TOKEN:~0,4%'
+                bat 'echo Dataset is: %SANITY_DATASET%'
             }
         }
 
