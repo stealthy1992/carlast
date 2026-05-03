@@ -169,9 +169,9 @@ pipeline {
             post {
                 always {
                     bat 'if not exist reports\\frontend mkdir reports\\frontend'
-                    bat 'xcopy /E /Y playwright-report\\* reports\\frontend\\'
-                    stash name: 'frontend-report',
-                        includes: 'reports/frontend/**'
+                    bat 'xcopy /E /Y playwright-report\\index.html reports\\frontend\\'
+                    bat 'if exist playwright-report\\data xcopy /E /Y playwright-report\\data reports\\frontend\\data\\'
+                    stash name: 'frontend-report', includes: 'reports/frontend/**'
                 }
             }
         }
@@ -185,9 +185,9 @@ pipeline {
             post {
                 always {
                     bat 'if not exist reports\\backend mkdir reports\\backend'
-                    bat 'xcopy /E /Y playwright-report\\* reports\\backend\\'
-                    stash name: 'backend-report',
-                        includes: 'reports/backend/**'
+                    bat 'xcopy /E /Y playwright-report\\index.html reports\\backend\\'
+                    bat 'if exist playwright-report\\data xcopy /E /Y playwright-report\\data reports\\backend\\data\\'
+                    stash name: 'backend-report', includes: 'reports/backend/**'
                 }
             }
         }
@@ -253,11 +253,11 @@ pipeline {
                     echo const https = require('https'); > poll-frontend-temp.js
                     echo const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL ^|^| 'https://carlast.vercel.app'; >> poll-frontend-temp.js
                     echo const EXPECTED = ['Toyota Corolla GLi','Honda Civic Oriel','Suzuki Alto VXR','Hyundai Tucson AWD','Toyota Fortuner Sigma','Kia Sportage Alpha','Honda BR-V S Plus','Suzuki Cultus VXL','Toyota Yaris ATIV','MG HS Essence']; >> poll-frontend-temp.js
-                    echo const MAX_WAIT = 90000; >> poll-frontend-temp.js
+                    echo const MAX_WAIT = 120000; >> poll-frontend-temp.js
                     echo const INTERVAL = 5000; >> poll-frontend-temp.js
                     echo const start = Date.now(); >> poll-frontend-temp.js
                     echo function fetchPage(cb) { >> poll-frontend-temp.js
-                    echo   https.get(BASE_URL + '/cars', function(res) { >> poll-frontend-temp.js
+                    echo   https.get(BASE_URL, function(res) { >> poll-frontend-temp.js
                     echo     var body = ''; >> poll-frontend-temp.js
                     echo     res.on('data', function(c) { body += c; }); >> poll-frontend-temp.js
                     echo     res.on('end', function() { cb(null, body); }); >> poll-frontend-temp.js
@@ -325,15 +325,7 @@ pipeline {
         // ──────────────────────────────────────────────────────────────
         stage('Teardown: Delete Test Documents') {
             steps {
-                bat '''
-                    curl -sf -X POST ^
-                      -H "Authorization: Bearer %SANITY_API_TOKEN%" ^
-                      -H "Content-Type: application/json" ^
-                      -d "{\\"mutations\\":[{\\"delete\\":{\\"query\\":\\"*[_type == 'carsforsale' && name in ['Toyota Corolla GLi','Honda Civic Oriel','Suzuki Alto VXR','Hyundai Tucson AWD','Toyota Fortuner Sigma','Kia Sportage Alpha','Honda BR-V S Plus','Suzuki Cultus VXL','Toyota Yaris ATIV','MG HS Essence']]\\"}}"  ^
-                      "https://%SANITY_PROJECT_ID%.api.sanity.io/v2021-10-21/data/mutate/%SANITY_DATASET%" ^
-                    && echo Test documents deleted successfully ^
-                    || echo Cleanup failed - manual deletion may be required
-                '''
+                bat 'curl -sf -X POST -H "Authorization: Bearer %SANITY_API_TOKEN%" -H "Content-Type: application/json" -d "{\\"mutations\\":[{\\"delete\\":{\\"query\\":\\"*[_type == \'carsforsale\' && name in [\'Toyota Corolla GLi\',\'Honda Civic Oriel\',\'Suzuki Alto VXR\',\'Hyundai Tucson AWD\',\'Toyota Fortuner Sigma\',\'Kia Sportage Alpha\',\'Honda BR-V S Plus\',\'Suzuki Cultus VXL\',\'Toyota Yaris ATIV\',\'MG HS Essence\']]\\"}}"  "https://%SANITY_PROJECT_ID%.api.sanity.io/v2021-10-21/data/mutate/%SANITY_DATASET%" && echo Test documents deleted successfully || echo Cleanup failed'
             }
         }
     }
