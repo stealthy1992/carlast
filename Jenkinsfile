@@ -118,45 +118,42 @@ pipeline {
         // so frontend tests never run against a stale build.
         // ──────────────────────────────────────────────────────────────
         stage('Wait for Vercel Deployment') {
-            
             steps {
                 bat '''
-                    node -e "
-                    const https = require('https');
-                    const VERCEL_TOKEN      = process.env.VERCEL_TOKEN;
-                    const VERCEL_PROJECT_ID = process.env.VERCEL_PROJECT_ID;
-                    const POLL_INTERVAL     = 10000;
-                    const MAX_WAIT          = 300000;
-                    const start             = Date.now();
-
-                    function check() {
-                        const options = {
-                            hostname: 'api.vercel.com',
-                            path: '/v6/deployments?projectId=' + VERCEL_PROJECT_ID + '&limit=1',
-                            headers: { Authorization: 'Bearer ' + VERCEL_TOKEN }
-                        };
-                        https.get(options, (res) => {
-                            let data = '';
-                            res.on('data', c => data += c);
-                            res.on('end', () => {
-                                try {
-                                    const dep = JSON.parse(data).deployments[0];
-                                    const elapsed = Math.round((Date.now() - start) / 1000);
-                                    console.log('[' + elapsed + 's] Vercel status: ' + dep.state);
-                                    if (dep.state === 'READY') { console.log('Vercel deployment is live'); process.exit(0); }
-                                    if (dep.state === 'ERROR') { console.error('Vercel deployment failed'); process.exit(1); }
-                                    if (Date.now() - start >= MAX_WAIT) { console.error('Timeout waiting for Vercel'); process.exit(1); }
-                                    setTimeout(check, POLL_INTERVAL);
-                                } catch(e) { console.error('Parse error: ' + e.message); process.exit(1); }
-                            });
-                        }).on('error', (e) => { console.error('Request error: ' + e.message); process.exit(1); });
-                    }
-                    check();
-                    "
+                    echo const https = require('https'); > wait-vercel-temp.js
+                    echo const VERCEL_TOKEN = process.env.VERCEL_TOKEN; >> wait-vercel-temp.js
+                    echo const VERCEL_PROJECT_ID = process.env.VERCEL_PROJECT_ID; >> wait-vercel-temp.js
+                    echo const POLL_INTERVAL = 10000; >> wait-vercel-temp.js
+                    echo const MAX_WAIT = 300000; >> wait-vercel-temp.js
+                    echo const start = Date.now(); >> wait-vercel-temp.js
+                    echo function check() { >> wait-vercel-temp.js
+                    echo   const options = { >> wait-vercel-temp.js
+                    echo     hostname: 'api.vercel.com', >> wait-vercel-temp.js
+                    echo     path: '/v6/deployments?projectId=' + VERCEL_PROJECT_ID + '&limit=1', >> wait-vercel-temp.js
+                    echo     headers: { Authorization: 'Bearer ' + VERCEL_TOKEN } >> wait-vercel-temp.js
+                    echo   }; >> wait-vercel-temp.js
+                    echo   https.get(options, function(res) { >> wait-vercel-temp.js
+                    echo     var data = ''; >> wait-vercel-temp.js
+                    echo     res.on('data', function(c) { data += c; }); >> wait-vercel-temp.js
+                    echo     res.on('end', function() { >> wait-vercel-temp.js
+                    echo       try { >> wait-vercel-temp.js
+                    echo         var dep = JSON.parse(data).deployments[0]; >> wait-vercel-temp.js
+                    echo         var elapsed = Math.round((Date.now() - start) / 1000); >> wait-vercel-temp.js
+                    echo         console.log('[' + elapsed + 's] Vercel status: ' + dep.state); >> wait-vercel-temp.js
+                    echo         if (dep.state === 'READY') { console.log('Vercel deployment is live'); process.exit(0); } >> wait-vercel-temp.js
+                    echo         if (dep.state === 'ERROR') { console.error('Vercel deployment failed'); process.exit(1); } >> wait-vercel-temp.js
+                    echo         if (Date.now() - start >= MAX_WAIT) { console.error('Timeout'); process.exit(1); } >> wait-vercel-temp.js
+                    echo         setTimeout(check, POLL_INTERVAL); >> wait-vercel-temp.js
+                    echo       } catch(e) { console.error('Parse error: ' + e.message); process.exit(1); } >> wait-vercel-temp.js
+                    echo     }); >> wait-vercel-temp.js
+                    echo   }).on('error', function(e) { console.error('Request error: ' + e.message); process.exit(1); }); >> wait-vercel-temp.js
+                    echo } >> wait-vercel-temp.js
+                    echo check(); >> wait-vercel-temp.js
+                    node wait-vercel-temp.js
+                    del wait-vercel-temp.js
                 '''
             }
         }
-
         // ──────────────────────────────────────────────────────────────
         // STAGE 5: Parallel — Frontend Tests & CSV Upload
         // These two run in parallel because they have no dependency on
@@ -204,115 +201,89 @@ pipeline {
         // The sanity-use-cdn: false header bypasses edge caching so
         // freshly uploaded documents are always visible immediately.
         // ──────────────────────────────────────────────────────────────
+        // ──────────────────────────────────────────────────────────────
+        // STAGE 6: GROQ Document Validation
+        // ──────────────────────────────────────────────────────────────
         stage('GROQ Document Validation') {
             steps {
                 bat '''
-                    node -e "
-                    const https = require('https');
-                    const PROJECT_ID = process.env.SANITY_PROJECT_ID;
-                    const DATASET    = process.env.SANITY_DATASET || 'production';
-                    const TOKEN      = process.env.SANITY_API_TOKEN;
-
-                    const TEST_CARS  = [
-                        'Toyota Corolla GLi',
-                        'Honda Civic Oriel',
-                        'Suzuki Alto VXR',
-                        'Hyundai Tucson AWD',
-                        'Toyota Fortuner Sigma',
-                        'Kia Sportage Alpha',
-                        'Honda BR-V S Plus',
-                        'Suzuki Cultus VXL',
-                        'Toyota Yaris ATIV',
-                        'MG HS Essence'
-                    ];
-
-                    const nameList = TEST_CARS.map(n => '\"' + n + '\"').join(',');
-                    const query    = encodeURIComponent(
-                        '*[_type == \"carsforsale\" && name in [' + nameList + ']] { name, modelyear, manufacturer, registrationyear, mileage, sittingcapacity, color, transmission, price, description, \"hasImage\": defined(images[0].asset._ref) }'
-                    );
-                    const url = 'https://' + PROJECT_ID + '.api.sanity.io/v2021-10-21/data/query/' + DATASET + '?query=' + query;
-                    const REQUIRED = ['name','modelyear','manufacturer','registrationyear','mileage','sittingcapacity','color','transmission','price','description'];
-
-                    https.get(url, { headers: { 'Authorization': 'Bearer ' + TOKEN, 'sanity-use-cdn': 'false' } }, (res) => {
-                        let data = '';
-                        res.on('data', c => data += c);
-                        res.on('end', () => {
-                            const { result } = JSON.parse(data);
-
-                            if (!result || result.length === 0) {
-                                console.error('No test documents found in Sanity');
-                                process.exit(1);
-                            }
-
-                            const foundNames  = result.map(d => d.name);
-                            const missingDocs = TEST_CARS.filter(n => !foundNames.includes(n));
-                            if (missingDocs.length > 0) {
-                                console.error('These cars were not found in Sanity: ' + missingDocs.join(', '));
-                                process.exit(1);
-                            }
-
-                            let passed = true;
-                            result.forEach((doc, i) => {
-                                console.log('Document ' + (i+1) + ': ' + doc.name);
-                                REQUIRED.forEach(f => {
-                                    if (doc[f] !== undefined && doc[f] !== null && doc[f] !== '') { console.log('  OK: ' + f); }
-                                    else { console.error('  MISSING: ' + f); passed = false; }
-                                });
-                                if (!doc.hasImage) { console.error('  MISSING: image'); passed = false; }
-                                else { console.log('  OK: image'); }
-                            });
-
-                            if (!passed) { console.error('GROQ validation failed'); process.exit(1); }
-                            console.log('All ' + result.length + ' documents passed validation');
-                        });
-                    }).on('error', (e) => { console.error(e.message); process.exit(1); });
-                    "
+                    echo const https = require('https'); > groq-validate-temp.js
+                    echo const PROJECT_ID = process.env.SANITY_PROJECT_ID; >> groq-validate-temp.js
+                    echo const DATASET = process.env.SANITY_DATASET ^|^| 'production'; >> groq-validate-temp.js
+                    echo const TOKEN = process.env.SANITY_API_TOKEN; >> groq-validate-temp.js
+                    echo const TEST_CARS = ['Toyota Corolla GLi','Honda Civic Oriel','Suzuki Alto VXR','Hyundai Tucson AWD','Toyota Fortuner Sigma','Kia Sportage Alpha','Honda BR-V S Plus','Suzuki Cultus VXL','Toyota Yaris ATIV','MG HS Essence']; >> groq-validate-temp.js
+                    echo const REQUIRED = ['name','modelyear','manufacturer','registrationyear','mileage','sittingcapacity','color','transmission','price','description']; >> groq-validate-temp.js
+                    echo const nameList = TEST_CARS.map(function(n) { return '"' + n + '"'; }).join(','); >> groq-validate-temp.js
+                    echo const query = encodeURIComponent('*[_type == "carsforsale" ^&^& name in [' + nameList + ']] { name, modelyear, manufacturer, registrationyear, mileage, sittingcapacity, color, transmission, price, description, "hasImage": defined(images[0].asset._ref) }'); >> groq-validate-temp.js
+                    echo const url = 'https://' + PROJECT_ID + '.api.sanity.io/v2021-10-21/data/query/' + DATASET + '?query=' + query; >> groq-validate-temp.js
+                    echo https.get(url, { headers: { 'Authorization': 'Bearer ' + TOKEN, 'sanity-use-cdn': 'false' } }, function(res) { >> groq-validate-temp.js
+                    echo   var data = ''; >> groq-validate-temp.js
+                    echo   res.on('data', function(c) { data += c; }); >> groq-validate-temp.js
+                    echo   res.on('end', function() { >> groq-validate-temp.js
+                    echo     var parsed = JSON.parse(data); >> groq-validate-temp.js
+                    echo     var result = parsed.result; >> groq-validate-temp.js
+                    echo     if (!result ^|^| result.length === 0) { console.error('No test documents found in Sanity'); process.exit(1); } >> groq-validate-temp.js
+                    echo     var foundNames = result.map(function(d) { return d.name; }); >> groq-validate-temp.js
+                    echo     var missingDocs = TEST_CARS.filter(function(n) { return foundNames.indexOf(n) === -1; }); >> groq-validate-temp.js
+                    echo     if (missingDocs.length ^> 0) { console.error('Missing cars: ' + missingDocs.join(', ')); process.exit(1); } >> groq-validate-temp.js
+                    echo     var passed = true; >> groq-validate-temp.js
+                    echo     result.forEach(function(doc, i) { >> groq-validate-temp.js
+                    echo       console.log('Document ' + (i+1) + ': ' + doc.name); >> groq-validate-temp.js
+                    echo       REQUIRED.forEach(function(f) { >> groq-validate-temp.js
+                    echo         if (doc[f] !== undefined ^&^& doc[f] !== null ^&^& doc[f] !== '') { console.log('  OK: ' + f); } >> groq-validate-temp.js
+                    echo         else { console.error('  MISSING: ' + f); passed = false; } >> groq-validate-temp.js
+                    echo       }); >> groq-validate-temp.js
+                    echo       if (!doc.hasImage) { console.error('  MISSING: image'); passed = false; } >> groq-validate-temp.js
+                    echo       else { console.log('  OK: image'); } >> groq-validate-temp.js
+                    echo     }); >> groq-validate-temp.js
+                    echo     if (!passed) { console.error('GROQ validation failed'); process.exit(1); } >> groq-validate-temp.js
+                    echo     console.log('All ' + result.length + ' documents passed validation'); >> groq-validate-temp.js
+                    echo   }); >> groq-validate-temp.js
+                    echo }).on('error', function(e) { console.error(e.message); process.exit(1); }); >> groq-validate-temp.js
+                    node groq-validate-temp.js
+                    del groq-validate-temp.js
                 '''
             }
         }
 
         // ──────────────────────────────────────────────────────────────
         // STAGE 7: Frontend Revalidation Verification
-        // Polls the Vercel frontend every 5s up to 90s to confirm all
-        // 10 vehicle names appear in the page HTML after getStaticProps
-        // revalidates (revalidate is set to 60s in your Next.js pages).
         // ──────────────────────────────────────────────────────────────
         stage('Frontend Revalidation Verification') {
             steps {
                 bat '''
-                    node -e "
-                    const https = require('https');
-                    const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || 'https://carlast.vercel.app/';
-                    const EXPECTED = ['Toyota Corolla GLi','Honda Civic Oriel','Suzuki Alto VXR','Hyundai Tucson AWD','Toyota Fortuner Sigma','Kia Sportage Alpha','Honda BR-V S Plus','Suzuki Cultus VXL','Toyota Yaris ATIV','MG HS Essence'];
-                    const MAX_WAIT = 90000;
-                    const INTERVAL = 5000;
-                    const start = Date.now();
-                    function fetchPage(cb) {
-                        https.get(BASE_URL + '/cars', (res) => {
-                            let body = '';
-                            res.on('data', c => body += c);
-                            res.on('end', () => cb(null, body));
-                        }).on('error', cb);
-                    }
-                    function poll() {
-                        fetchPage((err, html) => {
-                            const elapsed = Math.round((Date.now()-start)/1000);
-                            if (err) { console.log('[' + elapsed + 's] Fetch error: ' + err.message); }
-                            else {
-                                const missing = EXPECTED.filter(n => !html.includes(n));
-                                console.log('[' + elapsed + 's] Missing: ' + missing.length + '/' + EXPECTED.length);
-                                if (missing.length === 0) { console.log('All vehicles visible on frontend'); process.exit(0); }
-                            }
-                            if (Date.now() - start >= MAX_WAIT) { console.error('Timeout - vehicles did not appear within 90s'); process.exit(1); }
-                            setTimeout(poll, INTERVAL);
-                        });
-                    }
-                    poll();
-                    "
+                    echo const https = require('https'); > poll-frontend-temp.js
+                    echo const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL ^|^| 'https://carlast.vercel.app'; >> poll-frontend-temp.js
+                    echo const EXPECTED = ['Toyota Corolla GLi','Honda Civic Oriel','Suzuki Alto VXR','Hyundai Tucson AWD','Toyota Fortuner Sigma','Kia Sportage Alpha','Honda BR-V S Plus','Suzuki Cultus VXL','Toyota Yaris ATIV','MG HS Essence']; >> poll-frontend-temp.js
+                    echo const MAX_WAIT = 90000; >> poll-frontend-temp.js
+                    echo const INTERVAL = 5000; >> poll-frontend-temp.js
+                    echo const start = Date.now(); >> poll-frontend-temp.js
+                    echo function fetchPage(cb) { >> poll-frontend-temp.js
+                    echo   https.get(BASE_URL + '/cars', function(res) { >> poll-frontend-temp.js
+                    echo     var body = ''; >> poll-frontend-temp.js
+                    echo     res.on('data', function(c) { body += c; }); >> poll-frontend-temp.js
+                    echo     res.on('end', function() { cb(null, body); }); >> poll-frontend-temp.js
+                    echo   }).on('error', cb); >> poll-frontend-temp.js
+                    echo } >> poll-frontend-temp.js
+                    echo function poll() { >> poll-frontend-temp.js
+                    echo   fetchPage(function(err, html) { >> poll-frontend-temp.js
+                    echo     var elapsed = Math.round((Date.now() - start) / 1000); >> poll-frontend-temp.js
+                    echo     if (err) { console.log('[' + elapsed + 's] Fetch error: ' + err.message); } >> poll-frontend-temp.js
+                    echo     else { >> poll-frontend-temp.js
+                    echo       var missing = EXPECTED.filter(function(n) { return html.indexOf(n) === -1; }); >> poll-frontend-temp.js
+                    echo       console.log('[' + elapsed + 's] Missing: ' + missing.length + '/' + EXPECTED.length); >> poll-frontend-temp.js
+                    echo       if (missing.length === 0) { console.log('All vehicles visible on frontend'); process.exit(0); } >> poll-frontend-temp.js
+                    echo     } >> poll-frontend-temp.js
+                    echo     if (Date.now() - start ^>= MAX_WAIT) { console.error('Timeout - vehicles did not appear within 90s'); process.exit(1); } >> poll-frontend-temp.js
+                    echo     setTimeout(poll, INTERVAL); >> poll-frontend-temp.js
+                    echo   }); >> poll-frontend-temp.js
+                    echo } >> poll-frontend-temp.js
+                    echo poll(); >> poll-frontend-temp.js
+                    node poll-frontend-temp.js
+                    del poll-frontend-temp.js
                 '''
             }
         }
-
         // ──────────────────────────────────────────────────────────────
         // STAGE 8: HTML Report Generation
         // Unstashes both Playwright HTML reports from Stage 5 and
