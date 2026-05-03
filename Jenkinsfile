@@ -67,7 +67,11 @@ pipeline {
                 }
 
                 // Install Chromium only — sufficient for CI, keeps the pipeline fast
-                bat 'npx playwright install chromium --with-deps'
+                bat '''
+                    set PLAYWRIGHT_DOWNLOAD_CONNECTION_TIMEOUT=120000
+                    npx playwright install chromium --with-deps
+                '''
+
 
                 // Write .env for sanity_carlast at runtime from Jenkins credentials.
                 // This means you never commit your .env file to git.
