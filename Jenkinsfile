@@ -160,41 +160,36 @@ pipeline {
         // each other. Frontend tests hit the already-deployed Vercel app.
         // Backend tests log into Sanity Studio and upload vehicles.csv.
         // ──────────────────────────────────────────────────────────────
-        stage('Parallel: Frontend Tests & CSV Upload') {
-            parallel {
-
-                stage('5a — Frontend Playwright Tests') {
-                    steps {
-                        catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
-                            bat 'set PLAYWRIGHT_HTML_REPORT=playwright-report\\frontend && npx playwright test --project=frontend-chromium --reporter=html,list'
-                        }
-                    }
-                    post {
-                        always {
-                            bat 'if not exist playwright-report\\frontend mkdir playwright-report\\frontend'
-                            bat 'if not exist playwright-report\\frontend\\index.html echo No report generated > playwright-report\\frontend\\index.html'
-                            stash name: 'frontend-report',
-                                includes: 'playwright-report/frontend/**'
-                        }
-                    }
+        stage('5a — Frontend Playwright Tests') {
+            steps {
+                catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
+                    bat 'npx playwright test --project=frontend-chromium --reporter=html,list'
                 }
+            }
+            post {
+                always {
+                    bat 'if not exist playwright-report\\frontend mkdir playwright-report\\frontend'
+                    bat 'xcopy /E /Y playwright-report\\index.html playwright-report\\frontend\\'
+                    bat 'xcopy /E /Y playwright-report\\data playwright-report\\frontend\\data\\'
+                    stash name: 'frontend-report',
+                        includes: 'playwright-report/frontend/**'
+                }
+            }
+        }
 
-                stage('5b — CSV Upload via Sanity Studio') {
-                    steps {
-                        catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
-                            bat 'set PLAYWRIGHT_HTML_REPORT=playwright-report\\backend && npx playwright test --project=backend-chromium --reporter=html,list'
-                        }
-                    }
-                    post {
-                        always {
-                            // Create folder if it doesn't exist so stash never fails
-                            bat 'if not exist playwright-report\\backend mkdir playwright-report\\backend'
-                            // Create dummy file so stash has at least one file to include
-                            bat 'if not exist playwright-report\\backend\\index.html echo No report generated > playwright-report\\backend\\index.html'
-                            stash name: 'backend-report',
-                                includes: 'playwright-report/backend/**'
-                        }
-                    }
+        stage('5b — CSV Upload via Sanity Studio') {
+            steps {
+                catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
+                    bat 'npx playwright test --project=backend-chromium --reporter=html,list'
+                }
+            }
+            post {
+                always {
+                    bat 'if not exist playwright-report\\backend mkdir playwright-report\\backend'
+                    bat 'xcopy /E /Y playwright-report\\index.html playwright-report\\backend\\'
+                    bat 'xcopy /E /Y playwright-report\\data playwright-report\\backend\\data\\'
+                    stash name: 'backend-report',
+                        includes: 'playwright-report/backend/**'
                 }
             }
         }
