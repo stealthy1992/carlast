@@ -118,8 +118,42 @@ pipeline {
         // so frontend tests never run against a stale build.
         // ──────────────────────────────────────────────────────────────
         stage('Wait for Vercel Deployment') {
+            
             steps {
-                bat 'node scripts/wait-for-vercel.js'
+                bat '''
+                    node -e "
+                    const https = require('https');
+                    const VERCEL_TOKEN      = process.env.VERCEL_TOKEN;
+                    const VERCEL_PROJECT_ID = process.env.VERCEL_PROJECT_ID;
+                    const POLL_INTERVAL     = 10000;
+                    const MAX_WAIT          = 300000;
+                    const start             = Date.now();
+
+                    function check() {
+                        const options = {
+                            hostname: 'api.vercel.com',
+                            path: '/v6/deployments?projectId=' + VERCEL_PROJECT_ID + '&limit=1',
+                            headers: { Authorization: 'Bearer ' + VERCEL_TOKEN }
+                        };
+                        https.get(options, (res) => {
+                            let data = '';
+                            res.on('data', c => data += c);
+                            res.on('end', () => {
+                                try {
+                                    const dep = JSON.parse(data).deployments[0];
+                                    const elapsed = Math.round((Date.now() - start) / 1000);
+                                    console.log('[' + elapsed + 's] Vercel status: ' + dep.state);
+                                    if (dep.state === 'READY') { console.log('Vercel deployment is live'); process.exit(0); }
+                                    if (dep.state === 'ERROR') { console.error('Vercel deployment failed'); process.exit(1); }
+                                    if (Date.now() - start >= MAX_WAIT) { console.error('Timeout waiting for Vercel'); process.exit(1); }
+                                    setTimeout(check, POLL_INTERVAL);
+                                } catch(e) { console.error('Parse error: ' + e.message); process.exit(1); }
+                            });
+                        }).on('error', (e) => { console.error('Request error: ' + e.message); process.exit(1); });
+                    }
+                    check();
+                    "
+                '''
             }
         }
 
