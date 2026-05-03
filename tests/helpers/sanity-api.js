@@ -15,28 +15,25 @@ const SCHEMA_TYPES = {
   rent: 'carsforrent',
 };
 
-const PROJECTIONS = {
-  carsforsale: `{
-    _id, name, modelyear, manufacturer, registrationyear,
-    mileage, sittingcapacity, color, transmission, price,
-    description, slug,
-    "images": images[]{ "_ref": asset._ref }
-  }`,
-  carsforrent: `{
-    _id, name, modelyear, manufacturer, registrationyear,
-    mileage, sittingcapacity, color, transmission, rent,
-    description, slug,
-    "images": images[]{ "_ref": asset._ref }
-  }`,
-};
+// ✅ Projections removed from the URL query string entirely.
+// Sanity's REST API struggles with complex projections containing
+// nested braces and quoted keys when URL-encoded in a GET query param.
+// Instead we fetch all fields (*) and let the test files work with
+// the full document — this is simpler and never causes 400 errors.
+// If you want field filtering, use Sanity's POST query endpoint instead.
 
 async function fetchCars(request, category) {
   const schemaType = SCHEMA_TYPES[category];
-  const projection = PROJECTIONS[category];
 
-  const query    = encodeURIComponent(`*[_type == "${schemaType}"] ${projection}`);
+  // ✅ Simple query — no projection, no nested braces, no encoding issues
+  const rawQuery = `*[_type == "${schemaType}"]`;
+  const query    = encodeURIComponent(rawQuery);
+
   // ✅ Always api.sanity.io — never CDN — for test freshness
-  const url      = `https://${PROJECT_ID}.api.sanity.io/v${API_VER}/data/query/${DATASET}?query=${query}`;
+  const url = `https://${PROJECT_ID}.api.sanity.io/v${API_VER}/data/query/${DATASET}?query=${query}`;
+
+  // Uncomment to debug on Jenkins if 400 errors return:
+  // console.log('Fetching URL:', url);
 
   const response = await request.get(url, {
     headers: {
@@ -45,7 +42,12 @@ async function fetchCars(request, category) {
   });
 
   if (!response.ok()) {
-    throw new Error(`Sanity API error: ${response.status()} ${response.statusText()}`);
+    // ✅ Log the full response body so you can see exactly what Sanity rejected
+    let body = '';
+    try { body = await response.text(); } catch(e) {}
+    throw new Error(
+      `Sanity API error: ${response.status()} ${response.statusText()} — ${body}`
+    );
   }
 
   const { result } = await response.json();
@@ -61,7 +63,7 @@ function refToUrl(ref) {
   return `https://cdn.sanity.io/images/${PROJECT_ID}/${DATASET}/${rest}.${extension}`;
 }
 
-async function fetchCarsForSale(request)  { return fetchCars(request, 'sale'); }
-async function fetchCarsForRent(request)  { return fetchCars(request, 'rent'); }
+async function fetchCarsForSale(request) { return fetchCars(request, 'sale'); }
+async function fetchCarsForRent(request) { return fetchCars(request, 'rent'); }
 
 module.exports = { fetchCarsForSale, fetchCarsForRent, refToUrl };

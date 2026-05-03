@@ -18,10 +18,6 @@ test.describe('This will test the homepage features', () => {
         await page.goto('https://carlast.vercel.app/');
     })
 
-    test.afterAll(async ({page}) => {
-        await page.close();
-    })
-
     test('This will the correct number of for sale/rent cars are displayed on homepage', async () => {
         const forSaleCount = await homePage.forSaleCarsCount();
         const forRentCount = await homePage.forRentCarsCount();
