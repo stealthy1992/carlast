@@ -166,11 +166,13 @@ pipeline {
                 stage('5a — Frontend Playwright Tests') {
                     steps {
                         catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
-                            bat 'set PLAYWRIGHT_HTML_REPORT=playwright-report/frontend && npx playwright test --project=frontend-chromium --reporter=html,list'
+                            bat 'set PLAYWRIGHT_HTML_REPORT=playwright-report\\frontend && npx playwright test --project=frontend-chromium --reporter=html,list'
                         }
                     }
                     post {
                         always {
+                            bat 'if not exist playwright-report\\frontend mkdir playwright-report\\frontend'
+                            bat 'if not exist playwright-report\\frontend\\index.html echo No report generated > playwright-report\\frontend\\index.html'
                             stash name: 'frontend-report',
                                 includes: 'playwright-report/frontend/**'
                         }
@@ -180,11 +182,15 @@ pipeline {
                 stage('5b — CSV Upload via Sanity Studio') {
                     steps {
                         catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
-                            bat 'set PLAYWRIGHT_HTML_REPORT=playwright-report/backend && npx playwright test --project=backend-chromium --reporter=html,list'
+                            bat 'set PLAYWRIGHT_HTML_REPORT=playwright-report\\backend && npx playwright test --project=backend-chromium --reporter=html,list'
                         }
                     }
                     post {
                         always {
+                            // Create folder if it doesn't exist so stash never fails
+                            bat 'if not exist playwright-report\\backend mkdir playwright-report\\backend'
+                            // Create dummy file so stash has at least one file to include
+                            bat 'if not exist playwright-report\\backend\\index.html echo No report generated > playwright-report\\backend\\index.html'
                             stash name: 'backend-report',
                                 includes: 'playwright-report/backend/**'
                         }
