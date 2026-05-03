@@ -168,11 +168,10 @@ pipeline {
             }
             post {
                 always {
-                    bat 'if not exist playwright-report\\frontend mkdir playwright-report\\frontend'
-                    bat 'xcopy /E /Y playwright-report\\index.html playwright-report\\frontend\\'
-                    bat 'xcopy /E /Y playwright-report\\data playwright-report\\frontend\\data\\'
+                    bat 'if not exist reports\\frontend mkdir reports\\frontend'
+                    bat 'xcopy /E /Y playwright-report\\* reports\\frontend\\'
                     stash name: 'frontend-report',
-                        includes: 'playwright-report/frontend/**'
+                        includes: 'reports/frontend/**'
                 }
             }
         }
@@ -185,11 +184,10 @@ pipeline {
             }
             post {
                 always {
-                    bat 'if not exist playwright-report\\backend mkdir playwright-report\\backend'
-                    bat 'xcopy /E /Y playwright-report\\index.html playwright-report\\backend\\'
-                    bat 'xcopy /E /Y playwright-report\\data playwright-report\\backend\\data\\'
+                    bat 'if not exist reports\\backend mkdir reports\\backend'
+                    bat 'xcopy /E /Y playwright-report\\* reports\\backend\\'
                     stash name: 'backend-report',
-                        includes: 'playwright-report/backend/**'
+                        includes: 'reports/backend/**'
                 }
             }
         }
@@ -297,12 +295,11 @@ pipeline {
                 unstash 'frontend-report'
                 unstash 'backend-report'
 
-                // No xcopy needed — reports already in separate folders!
                 publishHTML(target: [
                     allowMissing         : true,
                     alwaysLinkToLastBuild: true,
                     keepAll              : true,
-                    reportDir            : 'playwright-report/frontend',
+                    reportDir            : 'reports/frontend',
                     reportFiles          : 'index.html',
                     reportName           : 'Frontend Playwright Report',
                     includes             : '**/*'
@@ -312,7 +309,7 @@ pipeline {
                     allowMissing         : true,
                     alwaysLinkToLastBuild: true,
                     keepAll              : true,
-                    reportDir            : 'playwright-report/backend',
+                    reportDir            : 'reports/backend',
                     reportFiles          : 'index.html',
                     reportName           : 'Backend Playwright Report',
                     includes             : '**/*'
