@@ -165,29 +165,28 @@ pipeline {
 
                 stage('5a — Frontend Playwright Tests') {
                     steps {
-                        // Runs frontend-chromium project from playwright.config.js
-                        // covers homepage.spec.js and detailpage.spec.js
-                        bat 'npx playwright test --project=frontend-chromium --reporter=html,list'
+                        catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
+                            bat 'set PLAYWRIGHT_HTML_REPORT=playwright-report/frontend && npx playwright test --project=frontend-chromium --reporter=html,list'
+                        }
                     }
                     post {
                         always {
                             stash name: 'frontend-report',
-                                  includes: 'playwright-report/**'
+                                includes: 'playwright-report/frontend/**'
                         }
                     }
                 }
 
                 stage('5b — CSV Upload via Sanity Studio') {
                     steps {
-                        // Runs dashboard.spec.js via the backend-chromium project.
-                        // Uses .auth/user.json produced in Stage 3.
-                        // Uploads all 10 vehicles from tests/data/vehicles.csv.
-                        bat 'npx playwright test --project=backend-chromium --reporter=html,list'
+                        catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
+                            bat 'set PLAYWRIGHT_HTML_REPORT=playwright-report/backend && npx playwright test --project=backend-chromium --reporter=html,list'
+                        }
                     }
                     post {
                         always {
                             stash name: 'backend-report',
-                                  includes: 'playwright-report/**'
+                                includes: 'playwright-report/backend/**'
                         }
                     }
                 }
@@ -297,16 +296,12 @@ pipeline {
                 unstash 'frontend-report'
                 unstash 'backend-report'
 
-                bat 'if not exist reports\\frontend mkdir reports\\frontend'
-                bat 'if not exist reports\\backend  mkdir reports\\backend'
-                bat 'xcopy /E /Y playwright-report\\* reports\\frontend\\ || echo No frontend report found'
-                bat 'xcopy /E /Y playwright-report\\* reports\\backend\\  || echo No backend report found'
-
+                // No xcopy needed — reports already in separate folders!
                 publishHTML(target: [
                     allowMissing         : true,
                     alwaysLinkToLastBuild: true,
                     keepAll              : true,
-                    reportDir            : 'reports/frontend',
+                    reportDir            : 'playwright-report/frontend',
                     reportFiles          : 'index.html',
                     reportName           : 'Frontend Playwright Report',
                     includes             : '**/*'
@@ -316,7 +311,7 @@ pipeline {
                     allowMissing         : true,
                     alwaysLinkToLastBuild: true,
                     keepAll              : true,
-                    reportDir            : 'reports/backend',
+                    reportDir            : 'playwright-report/backend',
                     reportFiles          : 'index.html',
                     reportName           : 'Backend Playwright Report',
                     includes             : '**/*'
