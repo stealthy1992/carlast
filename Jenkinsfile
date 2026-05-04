@@ -325,7 +325,11 @@ pipeline {
         // ──────────────────────────────────────────────────────────────
         stage('Teardown: Delete Test Documents') {
             steps {
-                bat 'curl -sf -X POST -H "Authorization: Bearer %SANITY_API_TOKEN%" -H "Content-Type: application/json" -d "{\\"mutations\\":[{\\"delete\\":{\\"query\\":\\"*[_type == \'carsforsale\' && name in [\'Toyota Corolla GLi\',\'Honda Civic Oriel\',\'Suzuki Alto VXR\',\'Hyundai Tucson AWD\',\'Toyota Fortuner Sigma\',\'Kia Sportage Alpha\',\'Honda BR-V S Plus\',\'Suzuki Cultus VXL\',\'Toyota Yaris ATIV\',\'MG HS Essence\']]\\"}}"  "https://%SANITY_PROJECT_ID%.api.sanity.io/v2021-10-21/data/mutate/%SANITY_DATASET%" && echo Test documents deleted successfully || echo Cleanup failed'
+                bat '''
+                    echo {"mutations":[{"delete":{"query":"*[_type == 'carsforsale' && name in ['Toyota Corolla GLi','Honda Civic Oriel','Suzuki Alto VXR','Hyundai Tucson AWD','Toyota Fortuner Sigma','Kia Sportage Alpha','Honda BR-V S Plus','Suzuki Cultus VXL','Toyota Yaris ATIV','MG HS Essence']]"}}]} > teardown.json
+                    curl -sf -X POST -H "Authorization: Bearer %SANITY_API_TOKEN%" -H "Content-Type: application/json" -d @teardown.json "https://%SANITY_PROJECT_ID%.api.sanity.io/v2021-10-21/data/mutate/%SANITY_DATASET%" && echo Test documents deleted successfully || echo Cleanup failed
+                    del teardown.json
+                '''
             }
         }
     }
