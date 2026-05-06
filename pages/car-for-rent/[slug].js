@@ -229,11 +229,12 @@ const CarDetails = ({car}) => {
 
 export const getStaticPaths = async () => {
 
+    const freshClient = client.withConfig({ useCdn: false })
     const query = `*[_type == "carsforrent" && defined(slug.current)]{slug{
         current
     }}`
 
-    const cars = await client.fetch(query);
+    const cars = await freshClient.fetch(query);
 
     const paths = cars
         .filter((item) => item?.slug?.current)  // extra JS safety net
@@ -253,8 +254,13 @@ export const getStaticPaths = async () => {
 export const getStaticProps = async ({ params: { slug } }) => {
     const freshClient = client.withConfig({ useCdn: false }) // bypass CDN
 
-    const query = `*[_type == "carsforrent" && slug.current == '${slug}'][0]`
-    const car = await freshClient.fetch(query)
+    const query = `*[_type == "carsforrent" && slug.current == $slug][0]`
+    const car = await freshClient.fetch(query, {slug})
+
+    if (!car) {
+        await new Promise(res => setTimeout(res, 2000))
+        car = await freshClient.fetch(query, { slug })
+    }
 
     if (!car) {
         return { 

@@ -8,9 +8,9 @@ class BasePage{
         }
     }
 
-    async clickSidebarItem(){
+    async clickSidebarItem(category){
         // await this.selectors.carsForSale;
-        await this.page.locator('a[href="/desk/carsforsale"]').click();
+        await this.page.locator(`a[href="/desk/${category}"]`).click();
 
         // await this.selectors.carsForSale.click();
     }

@@ -37,7 +37,8 @@ test.describe('This will test the homepage features', () => {
 
             expect(price).toBe(car.price);
 
-        } 
+        }
+         
     })
 
     test('THis will test the cars for rent are exactly those that are stored in sanity studio', async () => {
@@ -56,23 +57,13 @@ test.describe('This will test the homepage features', () => {
     test('each car on the frontend shows the correct image from Sanity', async ({ page }) => {
 
         for (const car of carsForSale) {
-        //   console.log('Car properties are: ',car);
-        //   console.log('Images raw:', JSON.stringify(car?.images, null, 2));
-          // 1. Get the Sanity asset IDs for this car
+  
           const sanityImageUrls  = car.images.map(img =>  refToUrl(img.asset._ref));
           const sanityAssetIds  = sanityImageUrls.map(url => homePage.extractAssetId(url));
           console.log(`[${car.name}] Sanity URLs:`, sanityImageUrls);
           console.log(`[${car.name}] Sanity asset IDs:`, sanityAssetIds);
-        //   console.log(`Car: ${car.name} | Sanity asset IDs:`, sanityAssetIds);
-    
-          // 2. Find this car's card on the frontend
           const card = await homePage.getCarsForSale(car.name);
-        //   const card = page.locator('.MuiCard-root', { hasText: car.name });
           await expect(card).toBeVisible();
-    
-          // 3. Get the src of the image inside this card
-        //   const imgSrc = await card.locator('img').first().getAttribute('src');
-        //   console.log(`Car: ${car.name} | Frontend src:`, imgSrc);
     
           // 4. Extract the asset ID from the frontend src
           const frontendSrc     = await homePage.getFirstImageSrcForCar(car.name)
@@ -81,24 +72,30 @@ test.describe('This will test the homepage features', () => {
 
           console.log(`[${car.name}] Frontend src:`, frontendSrc);
           console.log(`[${car.name}] Frontend asset ID:`, frontendAssetId);
-
           expect(sanityAssetIds).toContain(frontendAssetId);
+        }
+
+        for (const car of carsForRent) {
+  
+          const sanityImageUrls  = car.images.map(img =>  refToUrl(img.asset._ref));
+          const sanityAssetIds  = sanityImageUrls.map(url => homePage.extractAssetId(url));
+          console.log(`[${car.name}] Sanity URLs:`, sanityImageUrls);
+          console.log(`[${car.name}] Sanity asset IDs:`, sanityAssetIds);
+          const card = await homePage.getCarsForSale(car.name);
+          await expect(card).toBeVisible();
     
-          // 5. Assert the frontend asset ID exists in Sanity's asset IDs for this car
-        //   expect(sanityAssetIds).toContain(frontendAssetId);
+          // 4. Extract the asset ID from the frontend src
+          const frontendSrc     = await homePage.getFirstImageSrcForCar(car.name)
+          const frontendAssetId = homePage.extractAssetId(frontendSrc);
+        //   console.log(`Car: ${car.name} | Frontend asset ID:`, frontendAssetId);
+
+          console.log(`[${car.name}] Frontend src:`, frontendSrc);
+          console.log(`[${car.name}] Frontend asset ID:`, frontendAssetId);
+          expect(sanityAssetIds).toContain(frontendAssetId);
         }
       });
 
       test('clicking a sale car card navigates to correct detail page', async ({ page }) => {
-        // await page.goto('/');
-        // await page.waitForLoadState('networkidle');
-    
-        // Get the first car card's name before clicking
-        // const firstCard     = page.locator('.MuiCard-root').first();
-        // const carName       = await firstCard.locator('.MuiTypography-h5').textContent();
-    
-        // Click the card
-        // await firstCard.click();
     
         // Assert URL changed to detail page
         const h1 = await homePage.fetchSaleCard('Geely Coolray');
@@ -120,24 +117,42 @@ test.describe('This will test the homepage features', () => {
 
       test('all cars from sanity appear on listings page', async ({ page }) => {
 
-        const carNames = [];
+        const saleCars = [];
+        const rentCars = [];
         // Step 1: Fetch all valid cars from Sanity
-        const query = `*[_type == "carsforsale" && defined(slug.current)]{
+        const queryForSale = `*[_type == "carsforsale" && defined(slug.current)]{
             name,
             "slug": slug.current
         }`
-        const cars = await testClient.fetch(query)
+        const cars4sale = await testClient.fetch(queryForSale);
+
+        const queryForRent = `*[_type == "carsforrent" && defined(slug.current)]{
+            name,
+            "slug": slug.current
+        }`
+        const cars4rent = await testClient.fetch(queryForRent);
     
         for(let car of carsForSale){
-          carNames.push(car.name);
+          saleCars.push(car.name);
         }
 
-        for(let item of cars){
-          expect(carNames).toContain(item.name);
-          // console.log('query result is: ',item);
-          // console.log('visual result is: ',carNames);
+        for(let item of cars4sale){
+          expect(saleCars).toContain(item.name);
+
         }
         
-        await expect(carNames).toHaveLength(cars.length)
+        await expect(saleCars).toHaveLength(cars4sale.length)
+
+        for(let car of carsForRent){
+          rentCars.push(car.name);
+        }
+
+        for(let item of cars4rent){
+          expect(rentCars).toContain(item.name);
+
+        }
+        
+        await expect(rentCars).toHaveLength(cars4rent.length)
+
     })
 })

@@ -10,8 +10,8 @@ class DashboardPage extends BasePage{
         }
     }
 
-    async selectCategory(){
-        await this.clickSidebarItem();
+    async selectCategory(category){
+        await this.clickSidebarItem(category);
     }
 
     // ─────────────────────────────────────────────────────────────────
@@ -99,12 +99,12 @@ class DashboardPage extends BasePage{
         }
     }
 
-    async addingCar(car){
+    async addingCar(car, category){
 
         let dialogueCard;
 
-        console.log(car);
-        await this.page.locator('#carsforsale-carsforsale-0').waitFor({state: 'visible'});
+        console.log(car, category);
+        await this.page.locator(`#${category}-${category}-0`).waitFor({state: 'visible'});
         await this.page.getByTestId('action-intent-button').click();
         const form = this.page.locator('form[data-as="form"]');
         await form.waitFor({ state: 'visible' });
@@ -116,7 +116,13 @@ class DashboardPage extends BasePage{
         await form.locator('[data-testid="input-mileage"] input').fill(String(car.mileage));
         await form.locator('[data-testid="input-sittingcapacity"] input').fill(String(car.sittingcapacity));
         await form.locator('[data-testid="input-color"] input').fill(car.color);
-        await form.locator('[data-testid="input-price"] input').fill(String(car.price));
+        if(category == 'carsforsale'){
+            await form.locator('[data-testid="input-price"] input').fill(String(car.price));
+        }
+        else{
+            await form.locator('[data-testid="input-rent"] input').fill(String(car.rent));
+        }
+        
         await form.locator('button', { hasText: 'Add item'}).click();
         await this.page.locator('[data-ui="DialogCard"]').waitFor({ state: 'visible'});
         dialogueCard = await this.page.locator('[data-ui="DialogCard"]');

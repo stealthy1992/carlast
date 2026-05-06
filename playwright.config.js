@@ -13,7 +13,7 @@ module.exports = defineConfig({
   // This is the correct mechanism — NOT a 'sanity-setup' project with testMatch
   globalSetup: require.resolve('./global-setup.js'),
 
-  timeout: 120_000,
+  timeout: 280_000,
   testDir: './tests',
   fullyParallel: true,
   forbidOnly: !!process.env.CI,

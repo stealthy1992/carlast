@@ -11,16 +11,6 @@
       "sameSite": "None"
     },
     {
-      "name": "tempSession",
-      "value": "s%3AUJ66DjEKU5hbiOpjDxnTqTYtXqxEK6Ho.as9hHtWrQg3GVDYwuS81scdt5iuG4Tfe6S77cwtGfRM",
-      "domain": "api.sanity.io",
-      "path": "/",
-      "expires": 1777465637.889953,
-      "httpOnly": true,
-      "secure": true,
-      "sameSite": "None"
-    },
-    {
       "name": "rl_anonymous_id",
       "value": "RS_ENC_v3_ImM3MzkyNTQ4LTkwNmMtNDEyOS1iMDU5LTBmYWEyMDc5NzJlNiI%3D",
       "domain": ".sanity.io",
@@ -49,16 +39,6 @@
       "httpOnly": false,
       "secure": false,
       "sameSite": "Lax"
-    },
-    {
-      "name": "connect.sid",
-      "value": "s%3APbIUa9oto_ettwLkn1Sny1HLsKk5X_OL.gaMbILx2A9raD7TyAVmXRWiO9ksOfXKq5FbDRffnWwA",
-      "domain": "accounts.sanity.io",
-      "path": "/",
-      "expires": 1777468635.980256,
-      "httpOnly": true,
-      "secure": true,
-      "sameSite": "None"
     },
     {
       "name": "sanitySession",

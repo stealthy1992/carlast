@@ -5,6 +5,8 @@ require('dotenv').config();
 
 const AUTH_FILE = path.join(__dirname, '.auth/user.json');
 const SESSION_TTL = 12 * 60 * 60 * 1000; // 12 hours
+const isCI = !!process.env.CI;
+
 
 async function globalSetup() {
   const authDir = path.join(__dirname, '.auth');
@@ -18,24 +20,44 @@ async function globalSetup() {
     : Infinity;
 
   // If session is still fresh, skip re-authentication
-  if (authExists && authAge < SESSION_TTL) {
+  if (!isCI && authExists && authAge < SESSION_TTL) {
     console.log('✅ Reusing existing Sanity session.');
     return;
   }
 
   console.log('🔄 Session expired or missing. Re-authenticating...');
 
-  const browser = await chromium.launch({ headless: true });
-  const context = await browser.newContext({
-    storageState: path.join(__dirname, '.auth/user.json') // or whatever your saved file is named
+  const browser = await chromium.launch({ 
+    headless: true,
+    args: isCI
+      ? ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage']
+      : [], 
   });
+  const contextOptions = authExists ? {     
+    storageState: AUTH_FILE
+  } : {};
+
+  const context = await browser.newContext(contextOptions);
   const page = await context.newPage();
 
-  await page.goto(process.env.SANITY_URL);
+  await page.goto(process.env.SANITY_URL, { waitUntil: 'domcontentloaded' });
 
- // Click "Continue with email"
+
+  const resolvedElement = await page.waitForSelector('a[href="/desk/carsforsale"]' , 'button:has-text("E-mail / password")', { state: 'visible'});
+  const elementText = await resolvedElement.innerText();
+  console.log(elementText);
+
+  if (elementText == 'Cars For Sale') {
+    console.log('✅ Already authenticated. Saving current session state.');
+    await context.storageState({ path: AUTH_FILE });
+    await browser.close();
+    return;
+  }
+
+
+  // Click "Continue with email"
 //  await page.click('button[text=E-mail / password]');
- await page.getByRole('button', { name: 'E-mail / password' }).click();
+ await page.click('button', { name: 'E-mail / password' });
 
 
  // Fill in email and password
