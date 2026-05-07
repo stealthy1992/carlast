@@ -61,7 +61,7 @@ class DashboardPage extends BasePage{
                 const rawText  = await items.nth(i).innerText();
                 const trimmed  = rawText.trim();
 
-                if (trimmed === imageTarget) {
+                if (trimmed.includes(imageTarget)) {
                     console.log(`  ✅ Matched: "${trimmed}" — clicking`);
                     await items.nth(i).click();
                     await this.page.waitForTimeout(500);

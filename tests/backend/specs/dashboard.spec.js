@@ -50,7 +50,7 @@ test.describe('Sanity Studio — CSV Upload', () => {
           throw err; // re-throw so test fails clearly
         }
       }
-      console.log(`✅ All ${cars.length} vehicles uploaded successfully`);
+      console.log(`✅ All ${carsForSale.length} vehicles uploaded successfully`);
     });
 
     test('upload all cars for rent from CSV', async () => {
@@ -69,7 +69,7 @@ test.describe('Sanity Studio — CSV Upload', () => {
           throw err; // re-throw so test fails clearly
         }
       }
-      console.log(`✅ All ${cars.length} vehicles uploaded successfully`);
+      console.log(`✅ All ${carsForRent.length} vehicles uploaded successfully`);
 
     })
 });
