@@ -3,6 +3,7 @@ import createSchema from 'part:@sanity/base/schema-creator'
 import carsforrent from './carsforrent'
 import carsforsale from './carsforsale'
 import banner from './banner'
+import userForms from './userForms'
 
 // Then import schema types from any plugins that might expose them
 import schemaTypes from 'all:part:@sanity/base/schema-type'
@@ -18,6 +19,7 @@ export default createSchema({
     carsforsale,
     carsforrent,
     banner,
-    footerBanner
+    footerBanner,
+    userForms
   ]),
 })
