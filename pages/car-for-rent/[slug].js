@@ -28,57 +28,101 @@ const style = {
 
 const CarDetails = ({ car }) => {
 
-  const { name, images, rent, description, transmission, modelyear, manufacturer, registrationyear, mileage, sittingcapacity, color } = car
-  const [index, setIndex] = useState(0);
-  const { rentOrder } = useCarContextProvider()
-  const [open, setOpen] = useState(false);
-  const handleOpen = () => setOpen(true);
-  const handleClose = () => setOpen(false);
-  const [rentDays, setRentDays] = useState(1)
+  const { name, images, rent, description, transmission, modelyear,
+          manufacturer, registrationyear, mileage, sittingcapacity, color } = car
+
+  const [index, setIndex]               = useState(0)
+  const { rentOrder }                   = useCarContextProvider()
+  const [open, setOpen]                 = useState(false)
+  const handleOpen                      = () => setOpen(true)
+  const handleClose                     = () => setOpen(false)
+  const [rentDays, setRentDays]         = useState(1)
   const [customerName, setCustomerName] = useState('')
-  const [phone, setPhone] = useState('')
-  const [toggle, setToggle] = useState(false)
-  const [submitting, setSubmitting] = useState(false)
-  const carName = car.name
+  const [email, setEmail]               = useState('')
+  const [emailError, setEmailError]     = useState('')
+  const [certificate, setCertificate]   = useState(null)
+  const [fileError, setFileError]       = useState('')
+  const [toggle, setToggle]             = useState(false)
+  const [submitting, setSubmitting]     = useState(false)
+  const carName                         = car.name
 
-  const handleChange = (e) => {
-    setRentDays(e.target.value)
+  const validateEmail = (value) => {
+    const pattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    return pattern.test(value)
   }
 
-
-const rentRequest = async (e) => {
-  e.preventDefault()
-
-  if (!customerName.trim() || !phone.trim()) return
-
-  setSubmitting(true)
-
-  try {
-    const res = await fetch('/api/submit-rent', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        customerName,
-        phone,
-        carName,
-        rentDays,
-      }),
-    })
-
-    if (!res.ok) throw new Error('Submission failed')
-
-    setOpen(false)
-    setToggle(true)
-    setCustomerName('')
-    setPhone('')
-    setRentDays(1)
-
-  } catch (err) {
-    console.error('Submission error:', err)
-  } finally {
-    setSubmitting(false)
+  const handleEmailChange = (e) => {
+    const value = e.target.value
+    setEmail(value)
+    if (value && !validateEmail(value)) {
+      setEmailError('Please enter a valid email address')
+    } else {
+      setEmailError('')
+    }
   }
-}
+
+  const handleFileChange = (e) => {
+    const file = e.target.files[0]
+    if (!file) return
+
+    const allowed = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png']
+    if (!allowed.includes(file.type)) {
+      setFileError('Only PDF, JPG, or PNG files are accepted')
+      setCertificate(null)
+      return
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      setFileError('File size must be under 10MB')
+      setCertificate(null)
+      return
+    }
+    setFileError('')
+    setCertificate(file)
+  }
+
+  const rentRequest = async (e) => {
+    e.preventDefault()
+
+    if (!customerName.trim() || !email.trim() || !certificate) return
+    if (!validateEmail(email)) {
+      setEmailError('Please enter a valid email address')
+      return
+    }
+
+    setSubmitting(true)
+
+    try {
+      // Use FormData — no JSON, because we're sending a file
+      const formData = new FormData()
+      formData.append('customerName', customerName.trim())
+      formData.append('email', email.trim())
+      formData.append('carName', carName)
+      formData.append('rentDays', rentDays)
+      formData.append('clearanceCertificate', certificate)
+
+      const res = await fetch('/api/submit-rent', {
+        method: 'POST',
+        body: formData,
+        // Do NOT set Content-Type header — browser sets it with boundary automatically
+      })
+
+      if (!res.ok) throw new Error('Submission failed')
+
+      setOpen(false)
+      setToggle(true)
+      setCustomerName('')
+      setEmail('')
+      setEmailError('')
+      setCertificate(null)
+      setFileError('')
+      setRentDays(1)
+
+    } catch (err) {
+      console.error('Submission error:', err)
+    } finally {
+      setSubmitting(false)
+    }
+  }
 
   return (
     <Grid
@@ -132,13 +176,8 @@ const rentRequest = async (e) => {
       </Grid>
 
       <Grid item lg={6} md={6}>
-        <div className='product-detail-desc'>
-          <h1>{name}</h1>
-        </div>
-        <Box mt={2}>
-          <h4>Details: </h4>
-          <p>{description}</p>
-        </Box>
+        <div className='product-detail-desc'><h1>{name}</h1></div>
+        <Box mt={2}><h4>Details: </h4><p>{description}</p></Box>
         <Box mt={2}>
           <div className='product-detail-desc'>
             <h4>Rent per day:</h4>
@@ -161,15 +200,8 @@ const rentRequest = async (e) => {
             onClose={handleClose}
             aria-labelledby="modal-modal-title"
             aria-describedby="modal-modal-description"
-            alignItems="center"
-            justifyContent="center"
           >
-            {/* No <form> tag wrapping Box — MUI Modal works better with onSubmit on a plain form inside */}
-            <Box
-              component="form"
-              onSubmit={rentRequest}
-              sx={style}
-            >
+            <Box component="form" onSubmit={rentRequest} sx={style}>
               <Typography id="modal-modal-title" variant="h6" component="h2">
                 Customer Information
               </Typography>
@@ -187,12 +219,15 @@ const rentRequest = async (e) => {
 
               <Box marginBottom={2}>
                 <TextField
-                  label="Phone Number"
+                  label="Email Address"
                   variant="outlined"
                   required
                   fullWidth
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
+                  type="email"
+                  value={email}
+                  onChange={handleEmailChange}
+                  error={!!emailError}
+                  helperText={emailError}
                 />
               </Box>
 
@@ -212,7 +247,7 @@ const rentRequest = async (e) => {
                   <Select
                     value={rentDays}
                     label="Rent Days"
-                    onChange={handleChange}
+                    onChange={(e) => setRentDays(e.target.value)}
                   >
                     <MenuItem value={1}>1</MenuItem>
                     <MenuItem value={2}>2</MenuItem>
@@ -223,11 +258,36 @@ const rentRequest = async (e) => {
                 </FormControl>
               </Box>
 
+              {/* Police Clearance Certificate Upload */}
+              <Box marginBottom={2}>
+                <Typography
+                  variant="body2"
+                  sx={{ mb: 1, color: 'text.secondary', fontWeight: 500 }}
+                >
+                  Police Clearance Certificate <span style={{ color: 'red' }}>*</span>
+                </Typography>
+                <input
+                  type="file"
+                  accept=".pdf,.jpg,.jpeg,.png"
+                  required
+                  onChange={handleFileChange}
+                  style={{ width: '100%' }}
+                />
+                {fileError && (
+                  <Typography variant="caption" color="error" sx={{ mt: 0.5, display: 'block' }}>
+                    {fileError}
+                  </Typography>
+                )}
+                <Typography variant="caption" sx={{ color: 'text.secondary', mt: 0.5, display: 'block' }}>
+                  Accepted formats: PDF, JPG, PNG (max 10MB)
+                </Typography>
+              </Box>
+
               <Box marginBottom={2}>
                 <input
                   type="submit"
                   value={submitting ? 'Submitting...' : 'Submit'}
-                  disabled={submitting}
+                  disabled={submitting || !!emailError || !!fileError}
                 />
               </Box>
             </Box>
@@ -241,14 +301,10 @@ const rentRequest = async (e) => {
 export const getStaticPaths = async () => {
   const freshClient = client.withConfig({ useCdn: false })
   const query = `*[_type == "carsforrent" && defined(slug.current)]{slug{ current }}`
-  const cars = await freshClient.fetch(query);
-
+  const cars = await freshClient.fetch(query)
   const paths = cars
     .filter((item) => item?.slug?.current)
-    .map((item) => ({
-      params: { slug: item.slug.current }
-    }))
-
+    .map((item) => ({ params: { slug: item.slug.current } }))
   return { paths, fallback: 'blocking' }
 }
 
@@ -256,16 +312,11 @@ export const getStaticProps = async ({ params: { slug } }) => {
   const freshClient = client.withConfig({ useCdn: false })
   const query = `*[_type == "carsforrent" && slug.current == $slug][0]`
   let car = await freshClient.fetch(query, { slug })
-
   if (!car) {
     await new Promise(res => setTimeout(res, 2000))
     car = await freshClient.fetch(query, { slug })
   }
-
-  if (!car) {
-    return { notFound: true, revalidate: 10 }
-  }
-
+  if (!car) return { notFound: true, revalidate: 10 }
   return { props: { car }, revalidate: 60 }
 }
 

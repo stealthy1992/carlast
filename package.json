@@ -26,8 +26,10 @@
     "canvas-confetti": "^1.5.1",
     "csv-parse": "^6.2.1",
     "emailjs": "^4.0.1",
+    "formidable": "^3.5.4",
     "next": "12.1.0",
     "next-sanity-image": "^3.2.1",
+    "nodemailer": "^8.0.7",
     "nprogress": "^0.2.0",
     "papaparse": "^5.5.3",
     "react": "17.0.2",
@@ -37,6 +39,7 @@
     "react-icons": "^4.3.1",
     "react-material-ui-carousel": "^3.4.2",
     "react-swipeable-views": "^0.14.0",
+    "resend": "^6.12.3",
     "stripe": "^8.209.0"
   },
   "devDependencies": {
