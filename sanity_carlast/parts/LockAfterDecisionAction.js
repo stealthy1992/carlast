@@ -1,38 +1,55 @@
 // studio/parts/LockAfterDecisionAction.js
 
 import defaultResolve, { PublishAction } from 'part:@sanity/desk-tool/document-actions'
+import sanityClient from 'part:@sanity/base/client'
 
-// Wraps the default PublishAction to disable it once a final
-// decision (approved / declined) has already been published.
+const client = sanityClient.withConfig({ apiVersion: '2022-03-07' })
+
 function LockedPublishAction(props) {
   const originalAction = PublishAction(props)
 
+  // publishedDocument = the last committed published snapshot
   const publishedStatus = props.publishedDocument?.status
   const isDecisionMade  =
     publishedStatus === 'approved' || publishedStatus === 'declined'
 
-  if (!isDecisionMade) {
-    // No decision yet — behave exactly like the normal Publish button
-    return originalAction
+  if (isDecisionMade) {
+    // Already decided — disable the button entirely
+    return {
+      ...originalAction,
+      label:    '🔒 Decision Locked',
+      title:    `This application was already ${publishedStatus}. No further changes allowed.`,
+      disabled: true,
+      onHandle: () => {},
+    }
   }
 
-  // Decision already made — return a locked version
+  // Not yet decided — wrap onHandle to stamp decisionMade:true when a final status is published
   return {
     ...originalAction,
-    label:    '🔒 Decision Locked',
-    title:    `This application was already ${publishedStatus}. The status and reason can no longer be changed.`,
-    disabled: true,
-    onHandle: () => {},   // no-op — belt and suspenders
+    onHandle: async () => {
+      const draftStatus = props.draft?.status
+
+      // If admin is publishing an approved/declined decision for the first time,
+      // patch decisionMade:true into the document BEFORE publishing
+      if (draftStatus === 'approved' || draftStatus === 'declined') {
+        await client
+          .patch(`drafts.${props.id}`)
+          .set({ decisionMade: true })
+          .commit()
+      }
+
+      // Now run the original publish
+      originalAction.onHandle()
+    },
   }
 }
 
-// The resolver function receives all actions for every document type.
-// We only swap PublishAction for our wrapped version on "userForms" documents.
 export default function resolveDocumentActions(props) {
   const actions = defaultResolve(props)
 
   if (props.type !== 'userForms') {
-    return actions   // leave all other document types untouched
+    return actions
   }
 
   return actions.map((action) =>

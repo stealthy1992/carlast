@@ -2,7 +2,8 @@ export default {
   name: 'userForms',
   type: 'document',
   title: 'User Forms',
-  __experimental_actions: ['update', 'publish', 'delete'],
+  liveEdit: true, 
+  __experimental_actions: ['update', 'delete'],
   fields: [
     {
       name: 'customerName',
@@ -44,13 +45,20 @@ export default {
       readOnly: true,
     },
     {
-      name: 'status',
-      type: 'string',
-      title: 'Application Status',
-      initialValue: 'pending',
-      readOnly: ({ document }) =>
-        document?.applicationStatus === 'approved' ||
-        document?.applicationStatus === 'declined',
+        name: 'decisionMade',
+        type: 'boolean',
+        title: 'Decision Made',
+        hidden: true,         // invisible in the Studio UI
+        readOnly: true,       // never manually editable
+    },
+   // status field
+    {
+        name: 'status',
+        type: 'string',
+        title: 'Application Status',
+        initialValue: 'pending',
+        readOnly: ({ document }) =>
+        document?.status === 'approved' || document?.status === 'declined',
         options: {
             list: [
             { title: '🔲 Pending',  value: 'pending'  },
@@ -60,22 +68,23 @@ export default {
             layout: 'radio',
         },
     },
+
+    // reason field
     {
-    name: 'reason',
-    type: 'text',
-    title: 'Reason (mandatory before approving/declining)',
-    description: 'This message will be emailed directly to the customer. Required.',
-    rows: 4,
-    readOnly: ({ document }) =>
-        document?.status === 'approved' ||
-        document?.status === 'declined',
-    validation: Rule => Rule.custom((reason, context) => {
-        const status = context.document?.status
-        if ((status === 'approved' || status === 'declined') && !reason?.trim()) {
-        return 'You must provide a reason before approving or declining.'
-        }
-        return true
-    }),
+        name: 'reason',
+        type: 'text',
+        title: 'Reason (mandatory before approving/declining)',
+        description: 'This message will be emailed directly to the customer. Required.',
+        rows: 4,
+        readOnly: ({ document }) =>
+        document?.status === 'approved' || document?.status === 'declined',
+        validation: Rule => Rule.custom((reason, context) => {
+            const status = context.document?.status
+            if ((status === 'approved' || status === 'declined') && !reason?.trim()) {
+            return 'You must provide a reason before approving or declining.'
+            }
+            return true
+        }),
     },
   ],
   preview: {
