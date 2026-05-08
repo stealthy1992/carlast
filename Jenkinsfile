@@ -209,35 +209,65 @@ pipeline {
                     echo const PROJECT_ID = process.env.SANITY_PROJECT_ID; >> groq-validate-temp.js
                     echo const DATASET = process.env.SANITY_DATASET ^|^| 'production'; >> groq-validate-temp.js
                     echo const TOKEN = process.env.SANITY_API_TOKEN; >> groq-validate-temp.js
-                    echo const TEST_CARS = ['Toyota Corolla GLi','Honda Civic Oriel','Suzuki Alto VXR','Hyundai Tucson AWD','Toyota Fortuner Sigma','Kia Sportage Alpha','Honda BR-V S Plus','Suzuki Cultus VXL','Toyota Yaris ATIV','MG HS Essence']; >> groq-validate-temp.js
-                    echo const REQUIRED = ['name','modelyear','manufacturer','registrationyear','mileage','sittingcapacity','color','transmission','price','description']; >> groq-validate-temp.js
-                    echo const nameList = TEST_CARS.map(function(n) { return '"' + n + '"'; }).join(','); >> groq-validate-temp.js
-                    echo const query = encodeURIComponent('*[_type == "carsforsale" ^&^& name in [' + nameList + ']] { name, modelyear, manufacturer, registrationyear, mileage, sittingcapacity, color, transmission, price, description, "hasImage": defined(images[0].asset._ref) }'); >> groq-validate-temp.js
-                    echo const url = 'https://' + PROJECT_ID + '.api.sanity.io/v2021-10-21/data/query/' + DATASET + '?query=' + query; >> groq-validate-temp.js
-                    echo https.get(url, { headers: { 'Authorization': 'Bearer ' + TOKEN, 'sanity-use-cdn': 'false' } }, function(res) { >> groq-validate-temp.js
-                    echo   var data = ''; >> groq-validate-temp.js
-                    echo   res.on('data', function(c) { data += c; }); >> groq-validate-temp.js
-                    echo   res.on('end', function() { >> groq-validate-temp.js
-                    echo     var parsed = JSON.parse(data); >> groq-validate-temp.js
-                    echo     var result = parsed.result; >> groq-validate-temp.js
-                    echo     if (!result ^|^| result.length === 0) { console.error('No test documents found in Sanity'); process.exit(1); } >> groq-validate-temp.js
-                    echo     var foundNames = result.map(function(d) { return d.name; }); >> groq-validate-temp.js
-                    echo     var missingDocs = TEST_CARS.filter(function(n) { return foundNames.indexOf(n) === -1; }); >> groq-validate-temp.js
-                    echo     if (missingDocs.length ^> 0) { console.error('Missing cars: ' + missingDocs.join(', ')); process.exit(1); } >> groq-validate-temp.js
-                    echo     var passed = true; >> groq-validate-temp.js
-                    echo     result.forEach(function(doc, i) { >> groq-validate-temp.js
-                    echo       console.log('Document ' + (i+1) + ': ' + doc.name); >> groq-validate-temp.js
-                    echo       REQUIRED.forEach(function(f) { >> groq-validate-temp.js
-                    echo         if (doc[f] !== undefined ^&^& doc[f] !== null ^&^& doc[f] !== '') { console.log('  OK: ' + f); } >> groq-validate-temp.js
-                    echo         else { console.error('  MISSING: ' + f); passed = false; } >> groq-validate-temp.js
-                    echo       }); >> groq-validate-temp.js
-                    echo       if (!doc.hasImage) { console.error('  MISSING: image'); passed = false; } >> groq-validate-temp.js
-                    echo       else { console.log('  OK: image'); } >> groq-validate-temp.js
+
+                    echo const TEST_CARS_FOR_SALE = ['Toyota Corolla GLi','Honda Civic Oriel','Suzuki Alto VXR','Hyundai Tucson AWD','Toyota Fortuner Sigma','Kia Sportage Alpha','Honda BR-V S Plus','Suzuki Cultus VXL','Toyota Yaris ATIV','MG HS Essence']; >> groq-validate-temp.js
+                    echo const REQUIRED_FOR_SALE = ['name','modelyear','manufacturer','registrationyear','mileage','sittingcapacity','color','transmission','price','description']; >> groq-validate-temp.js
+
+                    echo const TEST_CARS_FOR_RENT = ['BMW 3 Series 320i','Nissan Patrol Platinum','Kia Picanto GT Line','Toyota Land Cruiser ZX','Hyundai Elantra GLS','Volkswagen Polo Highline','Honda Vezel Hybrid','Changan Alsvin Lumiere','Porsche Cayenne S','MG 5 Essence']; >> groq-validate-temp.js
+                    echo const REQUIRED_FOR_RENT = ['name','modelyear','manufacturer','registrationyear','mileage','sittingcapacity','color','transmission','rent','description']; >> groq-validate-temp.js
+
+                    echo function buildQuery(type, cars) { >> groq-validate-temp.js
+                    echo   var nameList = cars.map(function(n) { return '"' + n + '"'; }).join(','); >> groq-validate-temp.js
+                    echo   return encodeURIComponent('*[_type == "' + type + '" ^&^& name in [' + nameList + ']] { name, modelyear, manufacturer, registrationyear, mileage, sittingcapacity, color, transmission, price, rent, description, "hasImage": defined(images[0].asset._ref) }'); >> groq-validate-temp.js
+                    echo } >> groq-validate-temp.js
+
+                    echo function validateDocs(type, testCars, required, result) { >> groq-validate-temp.js
+                    echo   var passed = true; >> groq-validate-temp.js
+                    echo   if (!result ^|^| result.length === 0) { console.error('[' + type + '] ERROR: No test documents found in Sanity'); return false; } >> groq-validate-temp.js
+                    echo   var foundNames = result.map(function(d) { return d.name; }); >> groq-validate-temp.js
+                    echo   var missingDocs = testCars.filter(function(n) { return foundNames.indexOf(n) === -1; }); >> groq-validate-temp.js
+                    echo   if (missingDocs.length ^> 0) { console.error('[' + type + '] ERROR: Missing cars: ' + missingDocs.join(', ')); passed = false; } >> groq-validate-temp.js
+                    echo   result.forEach(function(doc, i) { >> groq-validate-temp.js
+                    echo     console.log('[' + type + '] Document ' + (i+1) + ': ' + doc.name); >> groq-validate-temp.js
+                    echo     required.forEach(function(f) { >> groq-validate-temp.js
+                    echo       if (doc[f] !== undefined ^&^& doc[f] !== null ^&^& doc[f] !== '') { console.log('  OK: ' + f); } >> groq-validate-temp.js
+                    echo       else { console.error('  MISSING: ' + f); passed = false; } >> groq-validate-temp.js
                     echo     }); >> groq-validate-temp.js
-                    echo     if (!passed) { console.error('GROQ validation failed'); process.exit(1); } >> groq-validate-temp.js
-                    echo     console.log('All ' + result.length + ' documents passed validation'); >> groq-validate-temp.js
+                    echo     if (!doc.hasImage) { console.error('  MISSING: image'); passed = false; } >> groq-validate-temp.js
+                    echo     else { console.log('  OK: image'); } >> groq-validate-temp.js
                     echo   }); >> groq-validate-temp.js
-                    echo }).on('error', function(e) { console.error(e.message); process.exit(1); }); >> groq-validate-temp.js
+                    echo   return passed; >> groq-validate-temp.js
+                    echo } >> groq-validate-temp.js
+
+                    echo function fetchAndValidate(type, testCars, required) { >> groq-validate-temp.js
+                    echo   return new Promise(function(resolve) { >> groq-validate-temp.js
+                    echo     var query = buildQuery(type, testCars); >> groq-validate-temp.js
+                    echo     var url = 'https://' + PROJECT_ID + '.api.sanity.io/v2021-10-21/data/query/' + DATASET + '?query=' + query; >> groq-validate-temp.js
+                    echo     https.get(url, { headers: { 'Authorization': 'Bearer ' + TOKEN, 'sanity-use-cdn': 'false' } }, function(res) { >> groq-validate-temp.js
+                    echo       var data = ''; >> groq-validate-temp.js
+                    echo       res.on('data', function(c) { data += c; }); >> groq-validate-temp.js
+                    echo       res.on('end', function() { >> groq-validate-temp.js
+                    echo         try { >> groq-validate-temp.js
+                    echo           var parsed = JSON.parse(data); >> groq-validate-temp.js
+                    echo           var passed = validateDocs(type, testCars, required, parsed.result); >> groq-validate-temp.js
+                    echo           if (passed) { console.log('[' + type + '] All ' + parsed.result.length + ' documents passed validation'); } >> groq-validate-temp.js
+                    echo           else { console.error('[' + type + '] Validation FAILED'); } >> groq-validate-temp.js
+                    echo           resolve(passed); >> groq-validate-temp.js
+                    echo         } catch(e) { console.error('[' + type + '] ERROR: Failed to parse response: ' + e.message); resolve(false); } >> groq-validate-temp.js
+                    echo       }); >> groq-validate-temp.js
+                    echo     }).on('error', function(e) { console.error('[' + type + '] ERROR: ' + e.message); resolve(false); }); >> groq-validate-temp.js
+                    echo   }); >> groq-validate-temp.js
+                    echo } >> groq-validate-temp.js
+
+                    echo Promise.all([ >> groq-validate-temp.js
+                    echo   fetchAndValidate('carsforsale', TEST_CARS_FOR_SALE, REQUIRED_FOR_SALE), >> groq-validate-temp.js
+                    echo   fetchAndValidate('carsforrent', TEST_CARS_FOR_RENT, REQUIRED_FOR_RENT) >> groq-validate-temp.js
+                    echo ]).then(function(results) { >> groq-validate-temp.js
+                    echo   var allPassed = results.every(function(r) { return r === true; }); >> groq-validate-temp.js
+                    echo   if (!allPassed) { console.error('GROQ validation failed for one or more document types'); process.exit(1); } >> groq-validate-temp.js
+                    echo   else { console.log('All document type validations passed successfully'); } >> groq-validate-temp.js
+                    echo }); >> groq-validate-temp.js
+
                     node groq-validate-temp.js
                     del groq-validate-temp.js
                 '''
@@ -252,7 +282,9 @@ pipeline {
                 bat '''
                     echo const https = require('https'); > poll-frontend-temp.js
                     echo const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL ^|^| 'https://carlast.vercel.app'; >> poll-frontend-temp.js
-                    echo const EXPECTED = ['Toyota Corolla GLi','Honda Civic Oriel','Suzuki Alto VXR','Hyundai Tucson AWD','Toyota Fortuner Sigma','Kia Sportage Alpha','Honda BR-V S Plus','Suzuki Cultus VXL','Toyota Yaris ATIV','MG HS Essence']; >> poll-frontend-temp.js
+                    echo const EXPECTED_FOR_SALE = ['Toyota Corolla GLi','Honda Civic Oriel','Suzuki Alto VXR','Hyundai Tucson AWD','Toyota Fortuner Sigma','Kia Sportage Alpha','Honda BR-V S Plus','Suzuki Cultus VXL','Toyota Yaris ATIV','MG HS Essence']; >> poll-frontend-temp.js
+                    echo const EXPECTED_FOR_RENT = ['BMW 3 Series 320i','Nissan Patrol Platinum','Kia Picanto GT Line','Toyota Land Cruiser ZX','Hyundai Elantra GLS','Volkswagen Polo Highline','Honda Vezel Hybrid','Changan Alsvin Lumiere','Porsche Cayenne S','MG 5 Essence']; >> poll-frontend-temp.js
+                    echo const EXPECTED = EXPECTED_FOR_SALE.concat(EXPECTED_FOR_RENT); >> poll-frontend-temp.js
                     echo const MAX_WAIT = 120000; >> poll-frontend-temp.js
                     echo const INTERVAL = 5000; >> poll-frontend-temp.js
                     echo const start = Date.now(); >> poll-frontend-temp.js
@@ -323,10 +355,10 @@ pipeline {
         // run, matched by name. Never touches any other Sanity documents.
         // Inline curl — no external script file needed.
         // ──────────────────────────────────────────────────────────────
-        stage('Teardown: Delete Test Documents') {
+       stage('Teardown: Delete Test Documents') {
             steps {
                 bat '''
-                    echo {"mutations":[{"delete":{"query":"*[_type == 'carsforsale' && name in ['Toyota Corolla GLi','Honda Civic Oriel','Suzuki Alto VXR','Hyundai Tucson AWD','Toyota Fortuner Sigma','Kia Sportage Alpha','Honda BR-V S Plus','Suzuki Cultus VXL','Toyota Yaris ATIV','MG HS Essence']]"}}]} > teardown.json
+                    echo {"mutations":[{"delete":{"query":"*[_type == 'carsforsale' && name in ['Toyota Corolla GLi','Honda Civic Oriel','Suzuki Alto VXR','Hyundai Tucson AWD','Toyota Fortuner Sigma','Kia Sportage Alpha','Honda BR-V S Plus','Suzuki Cultus VXL','Toyota Yaris ATIV','MG HS Essence']]"}},{"delete":{"query":"*[_type == 'carsforrent' && name in ['BMW 3 Series 320i','Nissan Patrol Platinum','Kia Picanto GT Line','Toyota Land Cruiser ZX','Hyundai Elantra GLS','Volkswagen Polo Highline','Honda Vezel Hybrid','Changan Alsvin Lumiere','Porsche Cayenne S','MG 5 Essence']]"}}]} > teardown.json
                     curl -sf -X POST -H "Authorization: Bearer %SANITY_API_TOKEN%" -H "Content-Type: application/json" -d @teardown.json "https://%SANITY_PROJECT_ID%.api.sanity.io/v2021-10-21/data/mutate/%SANITY_DATASET%" && echo Test documents deleted successfully || echo Cleanup failed
                     del teardown.json
                 '''
@@ -343,10 +375,10 @@ pipeline {
             echo 'Pipeline failed — running inline cleanup to avoid polluting Sanity'
             bat '''
                 curl -sf -X POST ^
-                  -H "Authorization: Bearer %SANITY_API_TOKEN%" ^
-                  -H "Content-Type: application/json" ^
-                  -d "{\\"mutations\\":[{\\"delete\\":{\\"query\\":\\"*[_type == 'carsforsale' && name in ['Toyota Corolla GLi','Honda Civic Oriel','Suzuki Alto VXR','Hyundai Tucson AWD','Toyota Fortuner Sigma','Kia Sportage Alpha','Honda BR-V S Plus','Suzuki Cultus VXL','Toyota Yaris ATIV','MG HS Essence']]\\"}}"  ^
-                  "https://%SANITY_PROJECT_ID%.api.sanity.io/v2021-10-21/data/mutate/%SANITY_DATASET%" ^
+                -H "Authorization: Bearer %SANITY_API_TOKEN%" ^
+                -H "Content-Type: application/json" ^
+                -d "{\\"mutations\\":[{\\"delete\\":{\\"query\\":\\"*[_type == 'carsforsale' && name in ['Toyota Corolla GLi','Honda Civic Oriel','Suzuki Alto VXR','Hyundai Tucson AWD','Toyota Fortuner Sigma','Kia Sportage Alpha','Honda BR-V S Plus','Suzuki Cultus VXL','Toyota Yaris ATIV','MG HS Essence']]\\"}},{\\"delete\\":{\\"query\\":\\"*[_type == 'carsforrent' && name in ['BMW 3 Series 320i','Nissan Patrol Platinum','Kia Picanto GT Line','Toyota Land Cruiser ZX','Hyundai Elantra GLS','Volkswagen Polo Highline','Honda Vezel Hybrid','Changan Alsvin Lumiere','Porsche Cayenne S','MG 5 Essence']]\\"}}"  ^
+                "https://%SANITY_PROJECT_ID%.api.sanity.io/v2021-10-21/data/mutate/%SANITY_DATASET%" ^
                 || exit 0
             '''
         }
