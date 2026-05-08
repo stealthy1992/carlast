@@ -1,18 +1,27 @@
-import React, { useState } from 'react'
+// pages/car-for-rent/[slug].js
+// Changes from your original:
+//   1. Scroll position is saved before modal opens and restored on close
+//      so the page doesn't jump when the MUI Modal portal mounts/unmounts.
+//   2. After successful submission the modal closes and the page scrolls
+//      to the success Alert at the top (using a ref).
+//   3. No other logic has been changed — all your existing fields, validation,
+//      file upload, and FormData submission are kept exactly as-is.
+
+import React, { useState, useRef } from 'react'
 import { urlFor, client } from '../../lib/client'
 import { Grid, Box } from '@mui/material'
-import Typography from '@mui/material/Typography';
-import Modal from '@mui/material/Modal';
-import InputLabel from '@mui/material/InputLabel';
-import MenuItem from '@mui/material/MenuItem';
-import FormControl from '@mui/material/FormControl';
-import Select from '@mui/material/Select';
+import Typography from '@mui/material/Typography'
+import Modal from '@mui/material/Modal'
+import InputLabel from '@mui/material/InputLabel'
+import MenuItem from '@mui/material/MenuItem'
+import FormControl from '@mui/material/FormControl'
+import Select from '@mui/material/Select'
 import TextField from '@mui/material/TextField'
-import { useCarContextProvider } from '../../context/CarContextProvider';
-import Alert from '@mui/material/Alert';
-import Stack from '@mui/material/Stack';
-import CloseIcon from '@mui/icons-material/Close';
-import IconButton from '@mui/material/IconButton';
+import { useCarContextProvider } from '../../context/CarContextProvider'
+import Alert from '@mui/material/Alert'
+import Stack from '@mui/material/Stack'
+import CloseIcon from '@mui/icons-material/Close'
+import IconButton from '@mui/material/IconButton'
 
 const style = {
   position: 'absolute',
@@ -24,18 +33,17 @@ const style = {
   border: '2px solid #000',
   boxShadow: 24,
   p: 4,
-};
+}
 
 const CarDetails = ({ car }) => {
-
-  const { name, images, rent, description, transmission, modelyear,
-          manufacturer, registrationyear, mileage, sittingcapacity, color } = car
+  const {
+    name, images, rent, description, transmission, modelyear,
+    manufacturer, registrationyear, mileage, sittingcapacity, color,
+  } = car
 
   const [index, setIndex]               = useState(0)
   const { rentOrder }                   = useCarContextProvider()
   const [open, setOpen]                 = useState(false)
-  const handleOpen                      = () => setOpen(true)
-  const handleClose                     = () => setOpen(false)
   const [rentDays, setRentDays]         = useState(1)
   const [customerName, setCustomerName] = useState('')
   const [email, setEmail]               = useState('')
@@ -45,6 +53,31 @@ const CarDetails = ({ car }) => {
   const [toggle, setToggle]             = useState(false)
   const [submitting, setSubmitting]     = useState(false)
   const carName                         = car.name
+
+  // ── Scroll-fix refs ──────────────────────────────────────────────────────
+  // Stores the Y position when the modal opens so we can restore it on close.
+  const savedScrollY = useRef(0)
+
+  // Ref attached to the Stack that wraps the success Alert so we can scroll to it.
+  const alertRef = useRef(null)
+  // ─────────────────────────────────────────────────────────────────────────
+
+  // ── Modal open/close handlers with scroll preservation ───────────────────
+  const handleOpen = () => {
+    // Save current scroll position BEFORE MUI locks the body scroll
+    savedScrollY.current = window.scrollY
+    setOpen(true)
+  }
+
+  const handleClose = () => {
+    setOpen(false)
+    // Restore scroll position after MUI releases the body scroll lock.
+    // requestAnimationFrame ensures the DOM has settled before we scroll.
+    requestAnimationFrame(() => {
+      window.scrollTo({ top: savedScrollY.current, behavior: 'instant' })
+    })
+  }
+  // ─────────────────────────────────────────────────────────────────────────
 
   const validateEmail = (value) => {
     const pattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
@@ -92,7 +125,6 @@ const CarDetails = ({ car }) => {
     setSubmitting(true)
 
     try {
-      // Use FormData — no JSON, because we're sending a file
       const formData = new FormData()
       formData.append('customerName', customerName.trim())
       formData.append('email', email.trim())
@@ -103,19 +135,31 @@ const CarDetails = ({ car }) => {
       const res = await fetch('/api/submit-rent', {
         method: 'POST',
         body: formData,
-        // Do NOT set Content-Type header — browser sets it with boundary automatically
       })
 
       if (!res.ok) throw new Error('Submission failed')
 
-      setOpen(false)
+      // 1. Close modal — handleClose also restores pre-modal scroll position
+      handleClose()
+
+      // 2. Show success alert
       setToggle(true)
+
+      // 3. Reset form fields
       setCustomerName('')
       setEmail('')
       setEmailError('')
       setCertificate(null)
       setFileError('')
       setRentDays(1)
+
+      // 4. Scroll to the Alert once it has rendered.
+      //    Two nested rAFs guarantee the Alert is in the DOM before scrolling.
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          alertRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+        })
+      })
 
     } catch (err) {
       console.error('Submission error:', err)
@@ -132,9 +176,10 @@ const CarDetails = ({ car }) => {
       justifyContent="center"
       style={{ minHeight: '100vh' }}
     >
+      {/* Success Alert — ref attached to the Stack so scrollIntoView targets it */}
       <Grid item lg={12} md={12} sm={12} xs={12}>
         {toggle && (
-          <Stack sx={{ width: '100%' }} spacing={2}>
+          <Stack ref={alertRef} sx={{ width: '100%' }} spacing={2}>
             <Alert
               sx={{ mb: 2 }}
               action={
@@ -159,7 +204,11 @@ const CarDetails = ({ car }) => {
         <div className="product-detail-container">
           <div>
             <div className="image-container">
-              <img src={urlFor(images && images[index])} className="product-detail-image" />
+              <img
+                src={urlFor(images && images[index])}
+                className="product-detail-image"
+                alt={name}
+              />
             </div>
             <div className="small-images-container">
               {images?.map((item, i) => (
@@ -168,6 +217,7 @@ const CarDetails = ({ car }) => {
                   src={urlFor(item)}
                   className={i === index ? 'small-image selected-image' : 'small-image'}
                   onMouseEnter={() => setIndex(i)}
+                  alt={`${name} view ${i + 1}`}
                 />
               ))}
             </div>
@@ -193,8 +243,12 @@ const CarDetails = ({ car }) => {
         <Box mt={2}><h4>Color: </h4><p>{color}</p></Box>
 
         <div className="buttons">
-          <button type="button" className="buy-now" onClick={handleOpen}>Apply for Rent</button>
+          {/* handleOpen now saves scroll position before the modal opens */}
+          <button type="button" className="buy-now" onClick={handleOpen}>
+            Apply for Rent
+          </button>
 
+          {/* handleClose now restores scroll position when the modal closes */}
           <Modal
             open={open}
             onClose={handleClose}
@@ -258,7 +312,6 @@ const CarDetails = ({ car }) => {
                 </FormControl>
               </Box>
 
-              {/* Police Clearance Certificate Upload */}
               <Box marginBottom={2}>
                 <Typography
                   variant="body2"

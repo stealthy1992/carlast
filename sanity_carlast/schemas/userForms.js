@@ -48,28 +48,34 @@ export default {
       type: 'string',
       title: 'Application Status',
       initialValue: 'pending',
-      options: {
-        layout: 'radio',
-        list: [
-          { title: '⏳ Pending',  value: 'pending'  },
-          { title: '✅ Approved', value: 'approved' },
-          { title: '❌ Declined', value: 'declined' },
-        ],
-      },
+      readOnly: ({ document }) =>
+        document?.applicationStatus === 'approved' ||
+        document?.applicationStatus === 'declined',
+        options: {
+            list: [
+            { title: '🔲 Pending',  value: 'pending'  },
+            { title: '✅ Approved', value: 'approved' },
+            { title: '❌ Declined', value: 'declined' },
+            ],
+            layout: 'radio',
+        },
     },
     {
-      name: 'reason',
-      type: 'text',
-      title: 'Reason (mandatory before approving/declining)',
-      description: 'This message will be emailed directly to the customer. Required.',
-      rows: 4,
-      validation: Rule => Rule.custom((reason, context) => {
+    name: 'reason',
+    type: 'text',
+    title: 'Reason (mandatory before approving/declining)',
+    description: 'This message will be emailed directly to the customer. Required.',
+    rows: 4,
+    readOnly: ({ document }) =>
+        document?.status === 'approved' ||
+        document?.status === 'declined',
+    validation: Rule => Rule.custom((reason, context) => {
         const status = context.document?.status
         if ((status === 'approved' || status === 'declined') && !reason?.trim()) {
-          return 'You must provide a reason before approving or declining.'
+        return 'You must provide a reason before approving or declining.'
         }
         return true
-      })
+    }),
     },
   ],
   preview: {
