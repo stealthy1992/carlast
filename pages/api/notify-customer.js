@@ -36,6 +36,7 @@ export default async function handler(req, res) {
   const statusLabel  = isApproved ? '✅ Approved' : '❌ Declined'
   const statusColor  = isApproved ? '#2e7d32' : '#c62828'
   const statusBg     = isApproved ? '#e8f5e9' : '#ffebee'
+  
 
   try {
     await transporter.sendMail({
