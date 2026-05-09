@@ -3,6 +3,8 @@ const HomePage = require('../page-objects/HomePage');
 const { urlFor, client } = require('../../../lib/client');
 const { testClient } = require('../../helpers/sanityTestClient');
 const { fetchCars, fetchCarsForSale, fetchCarsForRent, refToUrl } = require('../../helpers/sanity-api');
+const { waitForSubmission } = require('../../helpers/sanityTestClient');
+const { interceptEmailRoute } = require('../../helpers/email-interceptor');
 
 test.describe('This will test the homepage features', () => {
 
@@ -106,13 +108,53 @@ test.describe('This will test the homepage features', () => {
       });
     
       test('clicking a rent car card navigates to correct detail page', async ({ page }) => {
-        // await page.goto('/');
-        // await page.waitForLoadState('networkidle');
-    
-        // const firstRentCard = page.locator('.MuiCard-root').nth(/* rent section index */);
-        // await firstRentCard.click();
-        const h1 = await homePage.fetchRentCard('Dayz');
+
+        // ✅ STEP 1 — Interceptor first
+        const getEmailPayload = await interceptEmailRoute(page, '**/api/submit-rent');
+
+        // ✅ STEP 2 — Fill form
+        await page.goto('/contact');
+        await homePage.fetchRentCard('Dayz');
         await expect(page).toHaveURL(/\/car-for-rent\/.+/);
+        await homePage.applyForRent();
+
+        // ✅ STEP 3 — Submit and capture response atomically
+        const [response] = await Promise.all([
+          page.waitForResponse(res =>
+            res.url().includes('/api/submit-rent') && res.request().method() === 'POST'
+          ),
+          homePage.clickSubmit(),
+        ]);
+
+        // ✅ STEP 4 — Parse API response
+        const responseBody = await response.json();
+        expect(responseBody.success).toBe(true);
+        const documentId = responseBody.documentId ?? null;
+
+        // ✅ STEP 5 — UI assertion (modal closed, alert visible)
+        await homePage.postSubmitProcess();
+
+        // ✅ STEP 6 — Email payload assertions (synchronous — already captured)
+        const emailPayload = getEmailPayload();
+        expect(emailPayload).not.toBeNull();
+        expect(emailPayload.to).toBe('rehman.1992@hotmail.com');
+        expect(emailPayload.subject).toContain('Application Received');
+
+        // ✅ STEP 7 — GROQ validation last (async polling — slowest operation)
+        const sanityDoc = documentId
+          ? await waitForSubmission(querySubmissionById, documentId)
+          : await waitForSubmission(querySubmissionByToken, submissionToken);
+
+        expect(sanityDoc).toMatchObject({
+          _type: 'userForms',
+          customerName: 'John',
+          carName: 'Dayz',
+          email: 'rehman.1992@hotmail.com',
+          rentDays: 3,
+          status: 'pending',
+        });
+        expect(sanityDoc._createdAt).toBeDefined();
+
       });
 
       test('all cars from sanity appear on listings page', async ({ page }) => {

@@ -139,13 +139,12 @@ const CarDetails = ({ car }) => {
 
       if (!res.ok) throw new Error('Submission failed')
 
-      // 1. Close modal — handleClose also restores pre-modal scroll position
+      // ✅ Only addition — parse response to expose documentId
+      const result = await res.json()
+      console.log('Sanity document ID:', result.documentId)
+
       handleClose()
-
-      // 2. Show success alert
       setToggle(true)
-
-      // 3. Reset form fields
       setCustomerName('')
       setEmail('')
       setEmailError('')
@@ -153,8 +152,6 @@ const CarDetails = ({ car }) => {
       setFileError('')
       setRentDays(1)
 
-      // 4. Scroll to the Alert once it has rendered.
-      //    Two nested rAFs guarantee the Alert is in the DOM before scrolling.
       requestAnimationFrame(() => {
         requestAnimationFrame(() => {
           alertRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })

@@ -62,7 +62,7 @@ export default async function handler(req, res) {
       )
 
       // 2. Create the userForms document in Sanity
-      await serverClient.create({
+      const doc = await serverClient.create({
         _type: 'userForms',
         customerName: customerName.trim(),
         email: email.trim(),
@@ -109,7 +109,7 @@ export default async function handler(req, res) {
         `,
       })
 
-      return res.status(200).json({ message: 'Submission successful' })
+      return res.status(200).json({ success: true, documentId: doc._id })
 
     } catch (err) {
       console.error('Submission error:', err)

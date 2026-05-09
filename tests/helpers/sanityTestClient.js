@@ -14,4 +14,23 @@ const testClient = sanityClient({
       || process.env.SANITY_API_TOKEN,
 });
 
-module.exports = { testClient };
+async function querySubmissionByEmail(email) {
+  return sanityClient.fetch(
+    `*[_type == "userForms" && email == $email] | order(_createdAt desc) [0]`,
+    { email }
+  );
+}
+
+async function waitForSubmission(email, timeoutMs = 10_000) {
+  const start = Date.now();
+
+  while (Date.now() - start < timeoutMs) {
+    const doc = await querySubmissionByEmail(email);
+    if (doc) return doc;
+    await sleep(1000);
+  }
+
+  throw new Error(`Submission for ${email} not found in Sanity within ${timeoutMs}ms`);
+}
+
+module.exports = { testClient, waitForSubmission };

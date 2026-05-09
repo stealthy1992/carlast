@@ -1,4 +1,5 @@
 const BasePage = require('./BasePage');
+const { expect} = require('@playwright/test');
 
 class HomePage extends BasePage{
     constructor(page){
@@ -8,6 +9,10 @@ class HomePage extends BasePage{
             carsForSale: this.page.locator('.products-container', { has: this.page.locator('button', { hasText: 'Buy Now'})}),
             carsForRent: this.page.locator('.products-container', { has: this.page.locator('button', { hasText: 'Rent Now'})}),
             image: this.page.locator('.products-container img'),
+            rentButton: this.page.locator('button', { hasText: 'Apply for Rent'}),
+            rentForm: this.page.locator('form', { has: this.page.locator('h2', { hasText: 'Customer Information'})}),
+
+
            
         }
     }
@@ -71,6 +76,41 @@ class HomePage extends BasePage{
         const withoutQuery = filename.split('?')[0]; // "fea05cad-3345x2040.jpg"
         const assetId = withoutQuery.split('-')[0];  // "fea05cad"
         return assetId;
+    }
+
+    async applyForRent(){
+        await this.selectors.rentButton.click();
+        await this.selectors.rentForm.waitFor({ state: 'visible'});
+        const formFields = await this.selectors.rentForm.locator('.MuiFormControl-root');
+        // console.log('Field count is: ',formFields);
+        await formFields.filter({ hasText: 'Full Name'}).locator('input').fill('John');
+        await formFields.filter({ hasText: 'Email Address'}).locator('input').fill('rehman.1992@hotmail.com');
+        await formFields.filter({ hasText: 'Rent Days'}).locator('div[role="button"]').click();
+        await this.page.locator('ul').waitFor({ state: 'visible'});
+        await this.page.locator('ul > li', { hasText: '3'}).click();
+        // Locate the file input element and set the file
+        await this.page.locator('input[type="file"]').setInputFiles('C:/Users/Rehman/Downloads/mg-5-essence.jpg');
+        await expect(this.page.locator('input[type="file"]')).toHaveValue(/mg-5-essence/);
+
+        
+
+        // console.log('Count is: ',rentDays);
+        // await formFields.filter({ hasText: 'Police Clearance Certificate'}).locator('input[type="file"]').click();
+
+
+
+
+    }
+
+    async clickSubmit(){
+        await this.page.locator('input[type="submit"]').click();
+        
+    }
+
+    async postSubmitProcess(){
+        await this.selectors.rentForm.waitFor({ state: 'hidden'});
+        await this.page.locator('div[role="alert"]').waitFor({ state: 'visible'});
+        await this.page.locator('button[aria-label="close"]').click();
     }
 
     

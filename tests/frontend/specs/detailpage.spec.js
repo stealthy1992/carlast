@@ -5,6 +5,7 @@ const { urlFor, client } = require('../../../lib/client');
 const { testClient } = require('../../helpers/sanityTestClient');
 const HomePage = require('../page-objects/HomePage');
 
+
 test.describe('This will test all the features of the detail page', () => {
 
     let detailPage, carsForRent, carsForSale, homePage;
@@ -54,6 +55,7 @@ test.describe('This will test all the features of the detail page', () => {
         // const carName = await detailPage.fetchCarData('Geely Coolray');
         // expect(carName).toBe('Geely Coolray');
     })
+
 
     test('This is the master test, testing add to cart and checkout mechanism', async ({page}) => {
         
