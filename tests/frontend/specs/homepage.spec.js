@@ -113,7 +113,7 @@ test.describe('This will test the homepage features', () => {
         const getEmailPayload = await interceptEmailRoute(page, '**/api/submit-rent');
 
         // ✅ STEP 2 — Fill form
-        await page.goto('/contact');
+        // await page.goto('/contact');
         await homePage.fetchRentCard('Dayz');
         await expect(page).toHaveURL(/\/car-for-rent\/.+/);
         await homePage.applyForRent();
@@ -121,7 +121,7 @@ test.describe('This will test the homepage features', () => {
         // ✅ STEP 3 — Submit and capture response atomically
         const [response] = await Promise.all([
           page.waitForResponse(res =>
-            res.url().includes('/api/submit-rent') && res.request().method() === 'POST'
+            res.url().includes('/api/submit-rent') && res.status() === 200
           ),
           homePage.clickSubmit(),
         ]);
