@@ -148,17 +148,17 @@ class DashboardPage extends BasePage{
         
         await this.page.waitForSelector(
             '[data-testid="action-Publish"][data-disabled="true"]',
-            { state: 'visible', timeout: 15000 }
+            { state: 'visible' }
         );
 
         await this.page.waitForSelector(
             '[data-testid="action-Publish"][disabled]',
-            { state: 'visible', timeout: 15000 }
+            { state: 'visible' }
         );
 
         await this.page.waitForSelector(
             'text="The document was published"',
-            { state: 'visible', timeout: 10000 }
+            { state: 'visible' }
         );
     }
 }
