@@ -117,41 +117,11 @@ pipeline {
         // This stage polls the Vercel API until that deployment is READY
         // so frontend tests never run against a stale build.
         // ──────────────────────────────────────────────────────────────
+        // In your repo, commit this as: scripts/wait-vercel.js
+        // Then in Jenkinsfile replace the entire bat block with:
         stage('Wait for Vercel Deployment') {
             steps {
-                bat '''
-                    echo const https = require('https'); > wait-vercel-temp.js
-                    echo const VERCEL_TOKEN = process.env.VERCEL_TOKEN; >> wait-vercel-temp.js
-                    echo const VERCEL_PROJECT_ID = process.env.VERCEL_PROJECT_ID; >> wait-vercel-temp.js
-                    echo const POLL_INTERVAL = 10000; >> wait-vercel-temp.js
-                    echo const MAX_WAIT = 300000; >> wait-vercel-temp.js
-                    echo const start = Date.now(); >> wait-vercel-temp.js
-                    echo function check() { >> wait-vercel-temp.js
-                    echo   const options = { >> wait-vercel-temp.js
-                    echo     hostname: 'api.vercel.com', >> wait-vercel-temp.js
-                    echo     path: '/v6/deployments?projectId=' + VERCEL_PROJECT_ID + '&limit=1', >> wait-vercel-temp.js
-                    echo     headers: { Authorization: 'Bearer ' + VERCEL_TOKEN } >> wait-vercel-temp.js
-                    echo   }; >> wait-vercel-temp.js
-                    echo   https.get(options, function(res) { >> wait-vercel-temp.js
-                    echo     var data = ''; >> wait-vercel-temp.js
-                    echo     res.on('data', function(c) { data += c; }); >> wait-vercel-temp.js
-                    echo     res.on('end', function() { >> wait-vercel-temp.js
-                    echo       try { >> wait-vercel-temp.js
-                    echo         var dep = JSON.parse(data).deployments[0]; >> wait-vercel-temp.js
-                    echo         var elapsed = Math.round((Date.now() - start) / 1000); >> wait-vercel-temp.js
-                    echo         console.log('[' + elapsed + 's] Vercel status: ' + dep.state); >> wait-vercel-temp.js
-                    echo         if (dep.state === 'READY') { console.log('Vercel deployment is live'); process.exit(0); } >> wait-vercel-temp.js
-                    echo         if (dep.state === 'ERROR') { console.error('Vercel deployment failed'); process.exit(1); } >> wait-vercel-temp.js
-                    echo         if (Date.now() - start >= MAX_WAIT) { console.error('Timeout'); process.exit(1); } >> wait-vercel-temp.js
-                    echo         setTimeout(check, POLL_INTERVAL); >> wait-vercel-temp.js
-                    echo       } catch(e) { console.error('Parse error: ' + e.message); process.exit(1); } >> wait-vercel-temp.js
-                    echo     }); >> wait-vercel-temp.js
-                    echo   }).on('error', function(e) { console.error('Request error: ' + e.message); process.exit(1); }); >> wait-vercel-temp.js
-                    echo } >> wait-vercel-temp.js
-                    echo check(); >> wait-vercel-temp.js
-                    node wait-vercel-temp.js
-                    del wait-vercel-temp.js
-                '''
+                bat 'node scripts/wait-vercel.js'
             }
         }
         // ──────────────────────────────────────────────────────────────

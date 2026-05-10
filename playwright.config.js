@@ -9,8 +9,6 @@ dotenv.config({
 
 module.exports = defineConfig({
 
-  // ✅ globalSetup runs global-setup.js once before all tests
-  // This is the correct mechanism — NOT a 'sanity-setup' project with testMatch
   globalSetup: require.resolve('./global-setup.js'),
 
   timeout: 280_000,
@@ -24,12 +22,11 @@ module.exports = defineConfig({
   use: {
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
+    // ✅ Locally: localhost. Jenkins: Vercel URL from environment block
+    baseURL: process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000',
   },
 
   projects: [
-
-    // ── Backend (Sanity Studio) tests ──────────────────────────────
-    // Uses .auth/user.json produced by globalSetup (global-setup.js)
     {
       name: 'backend-chromium',
       testDir: './tests/backend/specs',
@@ -62,43 +59,35 @@ module.exports = defineConfig({
         storageState: path.join(__dirname, '.auth/user.json'),
       },
     },
-
-    // ── Frontend (NextJS) tests ─────────────────────────────────────
-    // Clean context — no Sanity auth needed
     {
       name: 'frontend-chromium',
       testDir: './tests/frontend/specs',
-      use: {
-        ...devices['Desktop Chrome'],
-      },
+      use: { ...devices['Desktop Chrome'] },
     },
     {
       name: 'frontend-firefox',
       testDir: './tests/frontend/specs',
-      use: {
-        ...devices['Desktop Firefox'],
-      },
+      use: { ...devices['Desktop Firefox'] },
     },
     {
       name: 'frontend-webkit',
       testDir: './tests/frontend/specs',
-      use: {
-        ...devices['Desktop Safari'],
-      },
+      use: { ...devices['Desktop Safari'] },
     },
     {
       name: 'frontend-mobile-chrome',
       testDir: './tests/frontend/specs',
-      use: {
-        ...devices['Pixel 5'],
-      },
+      use: { ...devices['Pixel 5'] },
     },
   ],
 
-  webServer: {
+  // ✅ Locally: spins up Next.js dev server
+  // ✅ Jenkins: CI=true so webServer is skipped entirely,
+  //             tests hit Vercel via baseURL above
+  webServer: process.env.CI ? undefined : {
     command: 'npm run dev',
     url: 'http://localhost:3000',
-    reuseExistingServer: !process.env.CI, // ✅ always spins up a fresh server on CI
+    reuseExistingServer: true,
     timeout: 120_000,
   },
 
