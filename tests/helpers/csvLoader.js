@@ -45,6 +45,28 @@ function getRentCars(data) {
   }));
 }
 
+function loadCustomers() {
+  const csvPath = path.join(__dirname, '../data/customers.csv')
+  const raw     = fs.readFileSync(csvPath, 'utf-8')
+  const lines   = raw.trim().split('\n')
+  const headers = lines[0].split(',').map(h => h.trim())
+
+  return lines.slice(1).map(line => {
+    const values = line.split(',').map(v => v.trim())
+    const row    = {}
+    headers.forEach((h, i) => { row[h] = values[i] })
+
+    return {
+      customerName:    row.customerName,
+      email:           row.email,
+      rentDays:        Number(row.rentDays),
+      // ✅ Absolute path — works on both local Windows and Jenkins
+      certificatePath: path.resolve(row.certificatePath),
+    }
+  })
+}
+
+
 
 
 // function validateRow(row) {
@@ -53,4 +75,4 @@ function getRentCars(data) {
 //   // add checks per your schema fields
 // }
 
-module.exports = { loadCSV, getCars, getRentCars };
+module.exports = { loadCSV, getCars, getRentCars, loadCustomers };

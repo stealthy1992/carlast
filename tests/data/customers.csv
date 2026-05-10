@@ -1,0 +1,6 @@
+customerName,email,rentDays,certificatePath
+John Ahmed,john.test@carlast.dev,3,tests/data/certificates/cert-john.jpg
+Sara Khan,sara.test@carlast.dev,5,tests/data/certificates/cert-sara.jpg
+Ali Raza,ali.test@carlast.dev,2,tests/data/certificates/cert-ali.png
+Fatima Malik,fatima.test@carlast.dev,7,tests/data/certificates/cert-fatima.jpg
+Usman Tariq,usman.test@carlast.dev,4,tests/data/certificates/cert-usman.png

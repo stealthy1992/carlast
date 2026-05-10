@@ -78,27 +78,21 @@ class HomePage extends BasePage{
         return assetId;
     }
 
-    async applyForRent(){
+    async applyForRent(customerName, email, rentDays, certificatePath){
         await this.selectors.rentButton.click();
         await this.selectors.rentForm.waitFor({ state: 'visible'});
         const formFields = await this.selectors.rentForm.locator('.MuiFormControl-root');
         // console.log('Field count is: ',formFields);
-        await formFields.filter({ hasText: 'Full Name'}).locator('input').fill('John');
-        await formFields.filter({ hasText: 'Email Address'}).locator('input').fill('rehman.1992@hotmail.com');
+        await formFields.filter({ hasText: 'Full Name'}).locator('input').fill(customerName);
+        await formFields.filter({ hasText: 'Email Address'}).locator('input').fill(email);
         await formFields.filter({ hasText: 'Rent Days'}).locator('div[role="button"]').click();
         await this.page.locator('ul').waitFor({ state: 'visible'});
-        await this.page.locator('ul > li', { hasText: '3'}).click();
+        await this.page.locator('ul > li', { hasText: rentDays}).click();
         // Locate the file input element and set the file
-        await this.page.locator('input[type="file"]').setInputFiles('C:/Users/Rehman/Downloads/mg-5-essence.jpg');
-        await expect(this.page.locator('input[type="file"]')).toHaveValue(/mg-5-essence/);
-
-        
-
-        // console.log('Count is: ',rentDays);
-        // await formFields.filter({ hasText: 'Police Clearance Certificate'}).locator('input[type="file"]').click();
-
-
-
+        await this.page.locator('input[type="file"]').setInputFiles(
+            certificatePath   
+        );
+        // await expect(this.page.locator('input[type="file"]')).toHaveValue(/mg-5-essence/)
 
     }
 

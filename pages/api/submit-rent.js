@@ -5,7 +5,7 @@ import nodemailer from 'nodemailer'
 
 export const config = {
   api: {
-    bodyParser: false, // required for file uploads
+    bodyParser: false,
   },
 }
 
@@ -17,25 +17,40 @@ const serverClient = sanityClient({
   useCdn: false,
 })
 
-// Nodemailer transporter — Gmail SMTP, free, no custom domain needed
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: process.env.GMAIL_USER,
-    pass: process.env.GMAIL_APP_PASSWORD,
-  },
-})
+// ✅ Switch transporter based on ENABLE_TEST_EMAIL flag
+// Production: real Gmail SMTP — emails reach real inboxes
+// Test:       Ethereal SMTP  — emails are caught, never delivered
+function createTransporter() {
+  if (process.env.ENABLE_TEST_EMAIL === 'true') {
+    return nodemailer.createTransport({
+      host: 'smtp.ethereal.email',
+      port: 587,
+      secure: false,
+      auth: {
+        user: process.env.ETHEREAL_USER,
+        pass: process.env.ETHEREAL_PASS,
+      },
+    })
+  }
+
+  return nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+      user: process.env.GMAIL_USER,
+      pass: process.env.GMAIL_APP_PASSWORD,
+    },
+  })
+}
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ message: 'Method not allowed' })
   }
 
-  const form = formidable({ maxFileSize: 10 * 1024 * 1024 }) // 10MB limit
+  const form = formidable({ maxFileSize: 10 * 1024 * 1024 })
 
   form.parse(req, async (err, fields, files) => {
     if (err) {
-      console.error('Form parse error:', err)
       return res.status(400).json({ message: 'Error parsing form data' })
     }
 
@@ -50,7 +65,6 @@ export default async function handler(req, res) {
     }
 
     try {
-      // 1. Upload the file to Sanity's asset pipeline
       const fileBuffer = fs.readFileSync(file.filepath)
       const uploadedAsset = await serverClient.assets.upload(
         file.mimetype?.includes('image') ? 'image' : 'file',
@@ -61,7 +75,6 @@ export default async function handler(req, res) {
         }
       )
 
-      // 2. Create the userForms document in Sanity
       const doc = await serverClient.create({
         _type: 'userForms',
         customerName: customerName.trim(),
@@ -79,8 +92,9 @@ export default async function handler(req, res) {
         status: 'pending',
       })
 
-      // 3. Send confirmation email to the customer via Nodemailer + Gmail
-      await transporter.sendMail({
+      // ✅ Create transporter and send email
+      const transporter = createTransporter()
+      const sentInfo = await transporter.sendMail({
         from: `"Car Rentals" <${process.env.GMAIL_USER}>`,
         to: email.trim(),
         subject: `Rent Application Received — ${carName}`,
@@ -103,13 +117,23 @@ export default async function handler(req, res) {
                 <td style="padding: 10px; border: 1px solid #ddd;">⏳ Pending Review</td>
               </tr>
             </table>
-            <p>Our team will review your application and Police Clearance Certificate. You will receive another email once a decision has been made.</p>
-            <p style="color: #888; font-size: 13px; margin-top: 32px;">This is an automated message. Please do not reply to this email.</p>
+            <p>Our team will review your application and Police Clearance Certificate.</p>
+            <p style="color: #888; font-size: 13px; margin-top: 32px;">This is an automated message. Please do not reply.</p>
           </div>
         `,
       })
 
-      return res.status(200).json({ success: true, documentId: doc._id })
+      // ✅ previewUrl only exists in test mode — null in production
+      // This does NOT break production since null is safely ignored
+      const previewUrl = process.env.ENABLE_TEST_EMAIL === 'true'
+        ? nodemailer.getTestMessageUrl(sentInfo)
+        : null
+
+      return res.status(200).json({
+        success: true,
+        documentId: doc._id,
+        previewUrl,           // null in production, Ethereal URL in test
+      })
 
     } catch (err) {
       console.error('Submission error:', err)

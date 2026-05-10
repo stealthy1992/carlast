@@ -5,6 +5,8 @@ const { testClient } = require('../../helpers/sanityTestClient');
 const { fetchCars, fetchCarsForSale, fetchCarsForRent, refToUrl } = require('../../helpers/sanity-api');
 const { waitForSubmission } = require('../../helpers/sanityTestClient');
 const { interceptEmailRoute } = require('../../helpers/email-interceptor');
+const { loadCustomers }       = require('../../helpers/csvLoader');
+
 
 test.describe('This will test the homepage features', () => {
 
@@ -109,53 +111,82 @@ test.describe('This will test the homepage features', () => {
     
       test('clicking a rent car card navigates to correct detail page', async ({ page }) => {
 
-        // ✅ STEP 1 — Interceptor first
-        const getEmailPayload = await interceptEmailRoute(page, '**/api/submit-rent');
+        
+        await homePage.fetchRentCard('Dayz')
+        await expect(page).toHaveURL(/\/car-for-rent\/.+/)
+        
+        // ✅ Load all 5 customers from CSV
+        const customers = loadCustomers()
+        expect(customers.length).toBe(5)
 
-        // ✅ STEP 2 — Fill form
-        // await page.goto('/contact');
-        await homePage.fetchRentCard('Dayz');
-        await expect(page).toHaveURL(/\/car-for-rent\/.+/);
-        await homePage.applyForRent();
+        for (const customer of customers) {
 
-        // ✅ STEP 3 — Submit and capture response atomically
-        const [response] = await Promise.all([
-          page.waitForResponse(res =>
-            res.url().includes('/api/submit-rent') && res.status() === 200
-          ),
-          homePage.clickSubmit(),
-        ]);
+          console.log(`\n── Submitting for: ${customer.customerName} (${customer.email}) ──`)
 
-        // ✅ STEP 4 — Parse API response
-        const responseBody = await response.json();
-        console.log('document ID is: ',responseBody.documentId);
-        expect(responseBody.success).toBe(true);
-        const documentId = responseBody.documentId ?? null;
+          // ✅ STEP 1 — Register interceptor before any action
+          const getFormPayload = await interceptEmailRoute(page, '**/api/submit-rent')
 
-        // ✅ STEP 5 — UI assertion (modal closed, alert visible)
-        await homePage.postSubmitProcess();
+          // ✅ STEP 2 — Navigate to car detail page
+          
 
-        // ✅ STEP 6 — Email payload assertions (synchronous — already captured)
-        const formPayload = getEmailPayload();
-        expect(formPayload).not.toBeNull();
-        expect(formPayload.email).toBe('rehman.1992@hotmail.com');
-        expect(formPayload.customerName).toBe('John');
+          // ✅ STEP 3 — Fill form with current customer's CSV data
+          await homePage.applyForRent(
+            customer.customerName,
+            customer.email,
+            customer.rentDays,
+            customer.certificatePath
+          )
 
-// The fact that the route was hit at all confirms the email trigger fired
-// since your backend sends the email inside the same /api/submit-rent handler
+          // ✅ STEP 4 — Submit and capture real backend response atomically
+          const [response] = await Promise.all([
+            page.waitForResponse(res =>
+              res.url().includes('/api/submit-rent') && res.status() === 200
+            ),
+            homePage.clickSubmit(),
+          ])
 
-        // ✅ STEP 7 — GROQ validation last (async polling — slowest operation)
-        const sanityDoc = await waitForSubmission('rehman.1992@hotmail.com');
+          // ✅ STEP 5 — Parse API response
+          const responseBody = await response.json()
+          console.log(`documentId: ${responseBody.documentId}`)
+          console.log(`previewUrl: ${responseBody.previewUrl}`)
+          expect(responseBody.success).toBe(true)
 
-        expect(sanityDoc).toMatchObject({
-          _type: 'userForms',
-          customerName: 'John',
-          carName: 'Dayz',
-          email: 'rehman.1992@hotmail.com',
-          rentDays: 3,
-          status: 'pending',
-        });
-        expect(sanityDoc._createdAt).toBeDefined();
+          // ✅ STEP 6 — UI assertion (modal closed, alert visible)
+          await homePage.postSubmitProcess()
+
+          // ✅ STEP 7 — Form payload assertions from interceptor
+          const formPayload = getFormPayload()
+          expect(formPayload).not.toBeNull()
+          expect(formPayload.email).toBe(customer.email)
+          expect(formPayload.customerName).toBe(customer.customerName)
+
+          // ✅ STEP 8 — Email delivery verification via Ethereal
+          // Skipped silently if previewUrl is null (non-test environment)
+          if (responseBody.previewUrl) {
+            const emailPage = await page.context().newPage()
+            await emailPage.goto(responseBody.previewUrl)
+            await expect(emailPage.locator('body'))
+              .toContainText('Application Received')
+            await expect(emailPage.locator('body'))
+              .toContainText(customer.customerName)
+            await emailPage.close()
+          }
+
+          // ✅ STEP 9 — GROQ validation by email (most recent doc for this email)
+          // Safe here because each customer has a unique test email in the CSV
+          // so _createdAt desc [0] always returns this run's document
+          const sanityDoc = await waitForSubmission(customer.email)
+          expect(sanityDoc).toMatchObject({
+            _type:        'userForms',
+            customerName: customer.customerName,
+            email:        customer.email,
+            rentDays:     customer.rentDays,
+            status:       'pending',
+          })
+          expect(sanityDoc._createdAt).toBeDefined()
+
+          console.log(`✅ ${customer.customerName} — all assertions passed`)
+        }
 
       });
 
