@@ -364,6 +364,22 @@ pipeline {
                 '''
             }
         }
+
+        stage('Teardown: Delete userForms Test Documents') {
+            steps {
+                bat '''
+                    echo {"mutations":[{"delete":{"query":"*[_type == 'userForms' && email in ['john.test@carlast.dev','sara.test@carlast.dev','ali.test@carlast.dev','fatima.test@carlast.dev','usman.test@carlast.dev']]"}}]} > teardown-userforms.json
+                    curl -sf -X POST ^
+                    -H "Authorization: Bearer %SANITY_API_TOKEN%" ^
+                    -H "Content-Type: application/json" ^
+                    -d @teardown-userforms.json ^
+                    "https://%SANITY_PROJECT_ID%.api.sanity.io/v2021-10-21/data/mutate/%SANITY_DATASET%" ^
+                    && echo userForms test documents deleted successfully ^
+                    || echo userForms cleanup failed
+                    del teardown-userforms.json
+                '''
+            }
+        }
     }
 
     // ──────────────────────────────────────────────────────────────────
@@ -377,7 +393,7 @@ pipeline {
                 curl -sf -X POST ^
                 -H "Authorization: Bearer %SANITY_API_TOKEN%" ^
                 -H "Content-Type: application/json" ^
-                -d "{\\"mutations\\":[{\\"delete\\":{\\"query\\":\\"*[_type == 'carsforsale' && name in ['Toyota Corolla GLi','Honda Civic Oriel','Suzuki Alto VXR','Hyundai Tucson AWD','Toyota Fortuner Sigma','Kia Sportage Alpha','Honda BR-V S Plus','Suzuki Cultus VXL','Toyota Yaris ATIV','MG HS Essence']]\\"}},{\\"delete\\":{\\"query\\":\\"*[_type == 'carsforrent' && name in ['BMW 3 Series 320i','Nissan Patrol Platinum','Kia Picanto GT Line','Toyota Land Cruiser ZX','Hyundai Elantra GLS','Volkswagen Polo Highline','Honda Vezel Hybrid','Changan Alsvin Lumiere','Porsche Cayenne S','MG 5 Essence']]\\"}}"  ^
+                -d "{\\"mutations\\":[{\\"delete\\":{\\"query\\":\\"*[_type == 'carsforsale' && name in ['Toyota Corolla GLi','Honda Civic Oriel','Suzuki Alto VXR','Hyundai Tucson AWD','Toyota Fortuner Sigma','Kia Sportage Alpha','Honda BR-V S Plus','Suzuki Cultus VXL','Toyota Yaris ATIV','MG HS Essence']]\\"}},{\\"delete\\":{\\"query\\":\\"*[_type == 'carsforrent' && name in ['BMW 3 Series 320i','Nissan Patrol Platinum','Kia Picanto GT Line','Toyota Land Cruiser ZX','Hyundai Elantra GLS','Volkswagen Polo Highline','Honda Vezel Hybrid','Changan Alsvin Lumiere','Porsche Cayenne S','MG 5 Essence']]\\"}},{\\"delete\\":{\\"query\\":\\"*[_type == 'userForms' && email in ['john.test@carlast.dev','sara.test@carlast.dev','ali.test@carlast.dev','fatima.test@carlast.dev','usman.test@carlast.dev']]\\"}}"  ^
                 "https://%SANITY_PROJECT_ID%.api.sanity.io/v2021-10-21/data/mutate/%SANITY_DATASET%" ^
                 || exit 0
             '''
