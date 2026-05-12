@@ -9,34 +9,7 @@ const transporter = nodemailer.createTransport({
   },
 })
 
-const allowedOrigins = new Set([
-  'https://localhost',
-  'http://localhost:5173',
-  'http://127.0.0.1:5173',
-  'https://carlast.vercel.app',
-])
-
-if (process.env.APP_ORIGIN) {
-  allowedOrigins.add(process.env.APP_ORIGIN)
-}
-
-function setCors(req, res) {
-  const origin = req.headers.origin
-  if (origin && allowedOrigins.has(origin)) {
-    res.setHeader('Access-Control-Allow-Origin', origin)
-    res.setHeader('Vary', 'Origin')
-  }
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS')
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-Webhook-Secret')
-}
-
 export default async function handler(req, res) {
-  setCors(req, res)
-
-  if (req.method === 'OPTIONS') {
-    return res.status(204).end()
-  }
-
   if (req.method !== 'POST') {
     return res.status(405).json({ message: 'Method not allowed' })
   }

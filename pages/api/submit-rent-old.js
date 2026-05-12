@@ -17,27 +17,6 @@ const serverClient = sanityClient({
   useCdn: false,
 })
 
-const allowedOrigins = new Set([
-  'https://localhost',
-  'http://localhost:5173',
-  'http://127.0.0.1:5173',
-  'https://carlast.vercel.app',
-])
-
-if (process.env.APP_ORIGIN) {
-  allowedOrigins.add(process.env.APP_ORIGIN)
-}
-
-function setCors(req, res) {
-  const origin = req.headers.origin
-  if (origin && allowedOrigins.has(origin)) {
-    res.setHeader('Access-Control-Allow-Origin', origin)
-    res.setHeader('Vary', 'Origin')
-  }
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS')
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type')
-}
-
 // ✅ Switch transporter based on ENABLE_TEST_EMAIL flag
 // Production: real Gmail SMTP — emails reach real inboxes
 // Test:       Ethereal SMTP  — emails are caught, never delivered
@@ -64,18 +43,8 @@ function createTransporter() {
 }
 
 export default async function handler(req, res) {
-  setCors(req, res)
-
-  if (req.method === 'OPTIONS') {
-    return res.status(204).end()
-  }
-
   if (req.method !== 'POST') {
     return res.status(405).json({ message: 'Method not allowed' })
-  }
-
-  if (!process.env.SANITY_WRITE_TOKEN) {
-    return res.status(500).json({ message: 'Server missing SANITY_WRITE_TOKEN' })
   }
 
   const form = formidable({ maxFileSize: 10 * 1024 * 1024 })
